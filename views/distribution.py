@@ -95,6 +95,9 @@ class ReceivePage(QWidget):
         self.tree_multi = QTreeWidget()
         self.tree_multi.setHeaderLabels(["Khoa / Loại / Mã Đồ", "SL Dơ", "Tiếp Nhận", "Từ Chối"])
         self.tree_multi.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.tree_multi.setColumnWidth(1, 100)
+        self.tree_multi.setColumnWidth(2, 200)
+        self.tree_multi.setColumnWidth(3, 200)
         self.tree_multi.itemDoubleClicked.connect(self.show_receive_detail)
         layout.addWidget(self.tree_multi)
 

@@ -132,18 +132,19 @@ class AssemblyPage(QWidget):
         layout.addWidget(fr_body)
 
     def refresh_session_cb(self):
-        f = "ALL"
-        if self.r_pt.isChecked(): f = "PT"
-        elif self.r_tt.isChecked(): f = "TT"
-        
-        # Use backend to get list
         try:
-            ds = backend.load_ds_phien_formatted(f)
             self.cb_ph_display.clear()
             self.map_ma_phien.clear()
-            for d in ds:
-                disp = f"{d['ma']} - {d['khoa']} - {d['tm']}"
-                self.map_ma_phien[disp] = d['ma']
+            
+            q = "SELECT ma_phieu, MAX(khoa_nhan) as khoa, MAX(thoi_gian) as thoi_gian FROM lich_su_giao_nhan WHERE trang_thai='DA_KHU_NHIEM' GROUP BY ma_phieu ORDER BY thoi_gian DESC"
+            rows = self.db.fetch_all(q)
+            for r in rows:
+                ma = r.get('ma_phieu', '')
+                khoa = r.get('khoa', '')
+                tg = r.get('thoi_gian', '')
+                tg_str = tg.strftime('%H:%M %d/%m') if hasattr(tg, 'strftime') else str(tg)
+                disp = f"{ma} - {khoa} - {tg_str}"
+                self.map_ma_phien[disp] = ma
                 self.cb_ph_display.addItem(disp)
         except Exception as e:
             print("Error refresh_session_cb:", e)
@@ -155,11 +156,11 @@ class AssemblyPage(QWidget):
         if not real_ma: return
         
         try:
-            ds = backend.lay_ds_theo_ma_phien_goc(real_ma)
+            ds = self.db.fetch_all("SELECT * FROM lich_su_giao_nhan WHERE ma_phieu=%s AND trang_thai='DA_KHU_NHIEM'", (real_ma,))
             if ds:
                 self.render_table(ds)
             else:
-                QMessageBox.information(self, "TB", "Phiên trống")
+                QMessageBox.information(self, "TB", "Phiên trống hoặc đã đóng gói")
         except Exception as e:
             print("Error tai ds:", e)
 
@@ -171,21 +172,36 @@ class AssemblyPage(QWidget):
             
         self.list_items = []
         
-        for idx, row_data in enumerate(ds):
-            # Parse row_data from lay_ds_theo_ma_phien_goc
-            # row format depends on backend... usually: [ma_phieu, loai_do, id_item, ma_do, ten_do, sl, don_vi, han_tk, khoa_id_or_ten, pptk]
-            # Let's dynamically extract based on index
-            
-            # Using basic logic
+        for idx, r in enumerate(ds):
             try:
-                id_item = row_data[2]
-                ma_do = row_data[3]
-                t = row_data[4]
-                sl_tong = row_data[5]
-                h = row_data[7] if len(row_data) > 7 else 30
-                k_ten = row_data[8] if len(row_data) > 8 else ""
-                pp = row_data[9] if len(row_data) > 9 else "STEAM"
-                is_le = (str(row_data[1]) != 'bo')
+                id_item = r.get('id')
+                ma_do = r.get('ma_do', '')
+                t = r.get('ten_do', '')
+                sl_tong = r.get('so_luong', 1)
+                k_ten = r.get('khoa_nhan', '')
+                
+                is_le = False
+                pp = "STEAM"
+                h = 30
+                
+                is_digit = str(ma_do).isdigit()
+                try:
+                    res1 = self.db.fetch_one("SELECT phuong_phap_tiet_khuan, han_tiet_khuan FROM danh_muc_bo_dung_cu WHERE ma_bo=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
+                    if res1:
+                        pp = res1.get('phuong_phap_tiet_khuan') or "STEAM"
+                        h = res1.get('han_tiet_khuan') or 30
+                    else:
+                        res2 = self.db.fetch_one("SELECT han_tiet_khuan FROM danh_muc_do_vai WHERE ma_do_vai=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
+                        if res2:
+                            h = res2.get('han_tiet_khuan') or 30
+                            is_le = True
+                        else:
+                            res3 = self.db.fetch_one("SELECT phuong_phap_tiet_khuan, han_tiet_khuan FROM danh_muc_dung_cu WHERE ma_dc=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
+                            if res3:
+                                pp = res3.get('phuong_phap_tiet_khuan') or "STEAM"
+                                h = res3.get('han_tiet_khuan') or 30
+                                is_le = True
+                except: pass
                 
                 fr = QFrame()
                 fr.setStyleSheet("background-color: white; border: 1px solid #bdc3c7;")

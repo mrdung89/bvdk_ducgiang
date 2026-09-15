@@ -312,7 +312,16 @@ class ReceivePage(QWidget):
             # Group by Khoa -> Loại -> Items
             tree_data = {}
             for row in reqs:
-                khoa = row['khoa_giao']
+                khoa_goc = row['khoa_giao']
+                tg = row['thoi_gian']
+                
+                if hasattr(tg, 'strftime'):
+                    tg_str = tg.strftime('%H:%M %d/%m')
+                else:
+                    tg_str = str(tg)[:16]
+                    
+                khoa = f"{khoa_goc} - {tg_str}"
+                
                 ma_do = row['ma_do']
                 if ma_do in dict_vai: loai = "Đồ Vải"
                 elif ma_do in dict_bo: loai = "Bộ Dụng Cụ"

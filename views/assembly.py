@@ -137,7 +137,7 @@ class AssemblyPage(QWidget):
             self.cb_ph_display.clear()
             self.map_ma_phien.clear()
             
-            q = "SELECT ma_phieu, MAX(khoa_nhan) as khoa, MAX(thoi_gian) as thoi_gian FROM lich_su_giao_nhan WHERE trang_thai='DA_KHU_NHIEM' GROUP BY ma_phieu ORDER BY thoi_gian DESC"
+            q = "SELECT ma_phieu, MAX(khoa_giao) as khoa, MAX(thoi_gian) as thoi_gian FROM lich_su_giao_nhan WHERE trang_thai='DA_KHU_NHIEM' GROUP BY ma_phieu ORDER BY thoi_gian DESC"
             rows = self.db.fetch_all(q)
             for r in rows:
                 ma = r.get('ma_phieu', '')
@@ -179,7 +179,7 @@ class AssemblyPage(QWidget):
                 ma_do = r.get('ma_do', '')
                 t = r.get('ten_do', '')
                 sl_tong = r.get('so_luong', 1)
-                k_ten = r.get('khoa_nhan', '')
+                k_ten = r.get('khoa_giao', '')
                 
                 is_le = False
                 pp = "STEAM"

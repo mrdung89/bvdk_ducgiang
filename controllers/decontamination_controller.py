@@ -7,181 +7,6 @@ import json
 
 from PySide6.QtCore import Qt
 
-class SelectionPopup(QDialog):
-    def __init__(self, parent, items):
-        super().__init__(parent)
-        self.setWindowTitle("Chọn đồ đưa vào máy")
-        self.resize(1000, 600)
-        
-        self.all_items = items
-        self.selected_items = []
-        
-        main_layout = QVBoxLayout(self)
-        
-        # Dual Pane Layout
-        pane_layout = QHBoxLayout()
-        
-        # --- LEFT PANE (Available Items) ---
-        left_group = QGroupBox("Đồ trong phiếu (Chưa chọn)")
-        left_layout = QVBoxLayout(left_group)
-        
-        self.search_box = QLineEdit()
-        self.search_box.setPlaceholderText("Tìm kiếm...")
-        self.search_box.textChanged.connect(self.filter_list)
-        left_layout.addWidget(self.search_box)
-        
-        self.list_available = QListWidget()
-        self.list_available.setStyleSheet("font-size: 14px; padding: 5px;")
-        self.list_available.itemDoubleClicked.connect(self.on_item_select)
-        # also support single click selection with a button or just use double click
-        left_layout.addWidget(self.list_available)
-        
-        pane_layout.addWidget(left_group, 1)
-        
-        # --- RIGHT PANE (Selected Items) ---
-        right_group = QGroupBox("Đã chọn")
-        right_layout = QVBoxLayout(right_group)
-        
-        self.table_selected = QTableWidget(0, 3)
-        self.table_selected.setHorizontalHeaderLabels(["Mã đồ", "Tên đồ", "Số lượng"])
-        self.table_selected.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.table_selected.setStyleSheet("font-size: 14px;")
-        self.table_selected.setSelectionBehavior(QTableWidget.SelectRows)
-        right_layout.addWidget(self.table_selected)
-        
-        # Buttons for right pane
-        btn_remove = QPushButton("Xóa mục chọn")
-        btn_remove.setStyleSheet("background-color: #e74c3c; color: white; font-weight: bold; padding: 8px;")
-        btn_remove.clicked.connect(self.remove_selected)
-        right_layout.addWidget(btn_remove)
-        
-        pane_layout.addWidget(right_group, 1)
-        
-        main_layout.addLayout(pane_layout)
-        
-        # --- BOTTOM BUTTONS ---
-        btn_layout = QHBoxLayout()
-        
-        btn_add_all = QPushButton("Chọn tất cả")
-        btn_add_all.setStyleSheet("background-color: #3498db; color: white; padding: 10px; font-weight: bold;")
-        btn_add_all.clicked.connect(self.select_all)
-        
-        btn_ok = QPushButton("Hoàn Tất")
-        btn_ok.setStyleSheet("background-color: #2ecc71; color: white; padding: 10px; font-weight: bold;")
-        btn_ok.clicked.connect(self.accept)
-        
-        btn_cancel = QPushButton("Hủy")
-        btn_cancel.setStyleSheet("padding: 10px;")
-        btn_cancel.clicked.connect(self.reject)
-        
-        btn_layout.addWidget(btn_add_all)
-        btn_layout.addStretch()
-        btn_layout.addWidget(btn_cancel)
-        btn_layout.addWidget(btn_ok)
-        main_layout.addLayout(btn_layout)
-        
-        self.populate_list()
-        
-    def populate_list(self):
-        self.list_available.clear()
-        for it in self.all_items:
-            # check how many remaining
-            sl_goc = int(it['so_luong'])
-            sl_da_chon = sum(x['selected_sl'] for x in self.selected_items if x['id'] == it['id'])
-            sl_con_lai = sl_goc - sl_da_chon
-            
-            if sl_con_lai > 0:
-                display_text = f"{it['ma_do']} - {it['ten_do']} (Còn: {sl_con_lai})"
-                self.list_available.addItem(display_text)
-                # Store item data in UserRole
-                last_item = self.list_available.item(self.list_available.count() - 1)
-                last_item.setData(Qt.UserRole, it)
-                
-    def filter_list(self, text):
-        text = text.lower()
-        for i in range(self.list_available.count()):
-            item = self.list_available.item(i)
-            it_data = item.data(Qt.UserRole)
-            match = text in str(it_data['ma_do']).lower() or text in str(it_data['ten_do']).lower()
-            item.setHidden(not match)
-
-    def on_item_select(self, item):
-        it_data = item.data(Qt.UserRole)
-        sl_goc = int(it_data['so_luong'])
-        sl_da_chon = sum(x['selected_sl'] for x in self.selected_items if x['id'] == it_data['id'])
-        sl_con_lai = sl_goc - sl_da_chon
-        
-        if sl_con_lai <= 0:
-            return
-            
-        sl, ok = QInputDialog.getInt(self, "Nhập số lượng", 
-                                     f"Nhập số lượng cho {it_data['ten_do']}:", 
-                                     value=sl_con_lai, minValue=1, maxValue=sl_con_lai)
-        if ok and sl > 0:
-            # Check if already in selected
-            existing = next((x for x in self.selected_items if x['id'] == it_data['id']), None)
-            if existing:
-                existing['selected_sl'] += sl
-            else:
-                new_it = it_data.copy()
-                new_it['selected_sl'] = sl
-                self.selected_items.append(new_it)
-            
-            self.update_table()
-            self.populate_list()
-            
-    def select_all(self):
-        for i in range(self.list_available.count()):
-            item = self.list_available.item(i)
-            if not item.isHidden():
-                it_data = item.data(Qt.UserRole)
-                sl_goc = int(it_data['so_luong'])
-                sl_da_chon = sum(x['selected_sl'] for x in self.selected_items if x['id'] == it_data['id'])
-                sl_con_lai = sl_goc - sl_da_chon
-                if sl_con_lai > 0:
-                    existing = next((x for x in self.selected_items if x['id'] == it_data['id']), None)
-                    if existing:
-                        existing['selected_sl'] += sl_con_lai
-                    else:
-                        new_it = it_data.copy()
-                        new_it['selected_sl'] = sl_con_lai
-                        self.selected_items.append(new_it)
-        
-        self.update_table()
-        self.populate_list()
-            
-    def remove_selected(self):
-        selected_rows = self.table_selected.selectedItems()
-        if not selected_rows:
-            return
-        row = selected_rows[0].row()
-        item_id = self.table_selected.item(row, 0).data(Qt.UserRole)
-        
-        # Remove from selected_items
-        self.selected_items = [x for x in self.selected_items if x['id'] != item_id]
-        self.update_table()
-        self.populate_list()
-
-    def update_table(self):
-        self.table_selected.setRowCount(0)
-        for it in self.selected_items:
-            row = self.table_selected.rowCount()
-            self.table_selected.insertRow(row)
-            
-            i1 = QTableWidgetItem(str(it['ma_do']))
-            i1.setData(Qt.UserRole, it['id'])
-            
-            i2 = QTableWidgetItem(str(it['ten_do']))
-            i3 = QTableWidgetItem(str(it['selected_sl']))
-            i3.setTextAlignment(Qt.AlignCenter)
-            
-            self.table_selected.setItem(row, 0, i1)
-            self.table_selected.setItem(row, 1, i2)
-            self.table_selected.setItem(row, 2, i3)
-
-    def get_selected(self):
-        return self.selected_items
-
 class DecontaminationController(QObject):
     def __init__(self, view, user_data):
         super().__init__()
@@ -195,7 +20,7 @@ class DecontaminationController(QObject):
         
         # Connect signals
         self.view.dt_date.dateChanged.connect(self.load_sessions)
-        self.view.btn_select_items.clicked.connect(self.open_selection_popup)
+        
         self.view.btn_manual_wash.clicked.connect(lambda: self.process_washing("CLEANED"))
         self.view.btn_machine_wash.clicked.connect(lambda: self.process_washing("WASHING"))
         
@@ -319,119 +144,145 @@ class DecontaminationController(QObject):
 
     def load_sessions(self):
         self.refresh_wash_machines_table()
-        # Vẫn giữ dòng này để tránh lỗi nếu có biến nào khác gọi đến, dù ta không dùng dt để lọc SQL nữa
-        dt = self.view.dt_date.date().toString("yyyy-MM-dd") 
-        self.view.cb_sessions.clear()
-        self.current_sessions.clear()
+        # Vẫn giữ dt_date phòng hờ, nhưng tải toàn bộ chờ
+        self.view.tree_cart.clear()
         
         try:
-            # 1. BỎ ĐIỀU KIỆN DATE(thoi_gian) = %s ĐỂ LẤY TOÀN BỘ ĐỒ ĐANG CHỜ
-            # 2. Đổi định dạng tm thành '%d/%m %H:%i' để hiển thị luôn ngày gửi
+            # ORDER BY thoi_gian DESC để ưu tiên phiên mới nhất lên trên
             rows = self.db.fetch_all("""
                 SELECT id, khoa_giao, ma_do, so_luong, DATE_FORMAT(thoi_gian, '%d/%m %H:%i') as tm 
                 FROM lich_su_giao_nhan 
                 WHERE trang_thai IN ('DA_TIEP_NHAN', 'DANG_GIAT')
+                ORDER BY thoi_gian DESC, id DESC
             """)
             
-            # Group by Khoa and Time
+            # Enrich ten_do
             for r in rows:
-                # Key hiển thị sẽ có dạng: "Khoa Ngoại - 14/09 08:30"
+                ma = r['ma_do']
+                ten = ma
+                is_digit = str(ma).isdigit()
+                try:
+                    q1 = "SELECT ten_bo FROM danh_muc_bo_dung_cu WHERE ma_bo=%s" + (" OR id=%s" if is_digit else "")
+                    p1 = (ma, ma) if is_digit else (ma,)
+                    res1 = self.db.fetch_one(q1, p1)
+                    if res1: ten = res1['ten_bo']
+                    else:
+                        q2 = "SELECT ten_do_vai FROM danh_muc_do_vai WHERE ma_do_vai=%s" + (" OR id=%s" if is_digit else "")
+                        p2 = (ma, ma) if is_digit else (ma,)
+                        res2 = self.db.fetch_one(q2, p2)
+                        if res2: ten = res2['ten_do_vai']
+                        else:
+                            q3 = "SELECT ten_dc FROM danh_muc_dung_cu WHERE ma_dc=%s" + (" OR id=%s" if is_digit else "")
+                            p3 = (ma, ma) if is_digit else (ma,)
+                            res3 = self.db.fetch_one(q3, p3)
+                            if res3: ten = res3['ten_dc']
+                except: pass
+                r['ten_do'] = ten
+            
+            # Group by Phiên
+            from collections import OrderedDict
+            groups = OrderedDict()
+            for r in rows:
                 key = f"{r['khoa_giao']} - {r['tm']}"
-                if key not in self.current_sessions:
-                    self.current_sessions[key] = []
-                self.current_sessions[key].append(r)
+                if key not in groups:
+                    groups[key] = []
+                groups[key].append(r)
                 
-            for key in self.current_sessions.keys():
-                self.view.cb_sessions.addItem(key)
+            self.view.tree_cart.blockSignals(True)
+            for key, items in groups.items():
+                parent = QTreeWidgetItem([key, "", ""])
+                parent.setCheckState(0, Qt.Unchecked)
+                # Đổi màu nền cho Parent để dễ nhìn
+                from PySide6.QtGui import QColor, QFont
+                parent.setBackground(0, QColor("#ecf0f1"))
+                parent.setBackground(1, QColor("#ecf0f1"))
+                parent.setBackground(2, QColor("#ecf0f1"))
+                font = QFont()
+                font.setBold(True)
+                parent.setFont(0, font)
+                
+                self.view.tree_cart.addTopLevelItem(parent)
+                
+                for it in items:
+                    child = QTreeWidgetItem([it['ma_do'], it['ten_do'], ""])
+                    child.setCheckState(0, Qt.Unchecked)
+                    child.setData(0, Qt.UserRole, it['id'])
+                    
+                    parent.addChild(child)
+                    
+                    from PySide6.QtWidgets import QSpinBox
+                    spin = QSpinBox()
+                    spin.setMinimum(1)
+                    spin.setMaximum(int(it['so_luong']))
+                    spin.setValue(int(it['so_luong']))
+                    spin.setStyleSheet("font-size: 16px;")
+                    
+                    # Store logic data in child UserRole 2
+                    child.setData(2, Qt.UserRole, spin) 
+                    self.view.tree_cart.setItemWidget(child, 2, spin)
+                    
+                parent.setExpanded(True)
+            self.view.tree_cart.blockSignals(False)
+            
+            # Hook itemChanged
+            try: self.view.tree_cart.itemChanged.disconnect()
+            except: pass
+            self.view.tree_cart.itemChanged.connect(self.on_tree_item_changed)
                 
         except Exception as e:
-            print("Error loading sessions:", e)
+            print("Error load_sessions:", e)
 
-    def open_selection_popup(self):
-        key = self.view.cb_sessions.currentText()
-        if not key or key not in self.current_sessions:
-            QMessageBox.warning(self.view, "Lỗi", "Vui lòng chọn một phiên giao nhận hợp lệ!")
-            return
-            
-        items = self.current_sessions[key]
-        if not items:
-            return
-            
-        # Lấy danh sách ID các phiếu đã nằm sẵn trong giỏ hàng
-        cart_ids = set()
-        for i in range(self.view.tree_cart.topLevelItemCount()):
-            node = self.view.tree_cart.topLevelItem(i)
-            pgd_ids = node.data(0, Qt.UserRole)
-            if pgd_ids:
-                for x in pgd_ids:
-                    if isinstance(x, dict):
-                        cart_ids.add(x['id'])
-                    else:
-                        cart_ids.add(x)
-                
-        # Lọc bỏ những phiếu đã có trong giỏ
-        available_items = [it for it in items if it['id'] not in cart_ids]
+    def on_tree_item_changed(self, item, column):
+        if column != 0: return
+        self.view.tree_cart.blockSignals(True)
+        state = item.checkState(0)
         
-        # Nếu tất cả đã nằm trong giỏ thì chặn popup hiển thị
-        if not available_items:
-            QMessageBox.information(self.view, "Thông báo", "Tất cả đồ của phiên này đã được đưa vào giỏ!")
-            return
-            
-        # Enrich with ten_do
-        for it in available_items:
-            ma = it['ma_do']
-            ten = ma
-            is_digit = str(ma).isdigit()
-            try:
-                q1 = "SELECT ten_bo FROM danh_muc_bo_dung_cu WHERE ma_bo=%s" + (" OR id=%s" if is_digit else "")
-                p1 = (ma, ma) if is_digit else (ma,)
-                res1 = self.db.fetch_one(q1, p1)
-                if res1: ten = res1['ten_bo']
+        # Nếu là Parent -> đổi tất cả con
+        if item.parent() is None:
+            for i in range(item.childCount()):
+                item.child(i).setCheckState(0, state)
+        else:
+            # Nếu là Child -> kiểm tra lại Parent
+            parent = item.parent()
+            all_checked = True
+            any_checked = False
+            for i in range(parent.childCount()):
+                if parent.child(i).checkState(0) == Qt.Checked:
+                    any_checked = True
                 else:
-                    q2 = "SELECT ten_do_vai FROM danh_muc_do_vai WHERE ma_do_vai=%s" + (" OR id=%s" if is_digit else "")
-                    p2 = (ma, ma) if is_digit else (ma,)
-                    res2 = self.db.fetch_one(q2, p2)
-                    if res2: ten = res2['ten_do_vai']
-                    else:
-                        q3 = "SELECT ten_dc FROM danh_muc_dung_cu WHERE ma_dc=%s" + (" OR id=%s" if is_digit else "")
-                        p3 = (ma, ma) if is_digit else (ma,)
-                        res3 = self.db.fetch_one(q3, p3)
-                        if res3: ten = res3['ten_dc']
-            except: pass
-            it['ten_do'] = ten
-
-        dlg = SelectionPopup(self.view, available_items)
-        if dlg.exec():
-            selected_items = dlg.get_selected()
-            for it in selected_items:
-                self.add_to_cart(it)
-                
-    def add_to_cart(self, item_data):
-        for i in range(self.view.tree_cart.topLevelItemCount()):
-            node = self.view.tree_cart.topLevelItem(i)
-            if node.text(0) == item_data['ma_do']:
-                old_sl = int(node.text(2))
-                node.setText(2, str(old_sl + item_data['selected_sl']))
-                
-                pgd_ids = node.data(0, Qt.UserRole)
-                if not pgd_ids: pgd_ids = []
-                # Lưu dict gồm ID phiếu và số lượng chọn
-                pgd_ids.append({'id': item_data['id'], 'sl': item_data['selected_sl']})
-                node.setData(0, Qt.UserRole, pgd_ids)
-                return
-                
-        node = QTreeWidgetItem([item_data['ma_do'], item_data['ten_do'], str(item_data['selected_sl'])])
-        node.setData(0, Qt.UserRole, [{'id': item_data['id'], 'sl': item_data['selected_sl']}])
-        self.view.tree_cart.addTopLevelItem(node)
+                    all_checked = False
+            if all_checked: parent.setCheckState(0, Qt.Checked)
+            elif any_checked: parent.setCheckState(0, Qt.PartiallyChecked)
+            else: parent.setCheckState(0, Qt.Unchecked)
+        self.view.tree_cart.blockSignals(False)
 
     def process_washing(self, status):
         count = self.view.tree_cart.topLevelItemCount()
         if count == 0:
-            QMessageBox.warning(self.view, "Cảnh báo", "Giỏ hàng đang trống!")
+            QMessageBox.warning(self.view, "Cảnh báo", "Không có dữ liệu!")
             return
-        
+            
+        # Thu thập các mục được chọn
+        selected_items = []
+        for i in range(count):
+            parent = self.view.tree_cart.topLevelItem(i)
+            for j in range(parent.childCount()):
+                child = parent.child(j)
+                if child.checkState(0) == Qt.Checked:
+                    pid = child.data(0, Qt.UserRole)
+                    spin = child.data(2, Qt.UserRole)
+                    if spin:
+                        sl_chon = spin.value()
+                        selected_items.append({'id': pid, 'sl': sl_chon})
+                        
+        if not selected_items:
+            QMessageBox.warning(self.view, "Cảnh báo", "Vui lòng tích chọn ít nhất 1 món đồ!")
+            return
+
         # Nếu bấm "Rửa máy" thì mở dialog chọn máy & chu trình
         if status == "WASHING":
+            # Lưu tạm vào biến để truyền qua máy
+            self.temp_selected_items = selected_items
             self.open_washing_machine_dialog()
             return
             
@@ -439,45 +290,30 @@ class DecontaminationController(QObject):
         phuong_phap = "Rửa thủ công"
             
         try:
-            for i in range(count):
-                node = self.view.tree_cart.topLevelItem(i)
-                pgd_info = node.data(0, Qt.UserRole)
+            for p_data in selected_items:
+                pid = p_data['id']
+                sl_chon = p_data['sl']
                 
-                for p_data in pgd_info:
-                    pid = p_data['id']
-                    sl_chon = p_data['sl']
+                # 1. Check database lấy số lượng gốc
+                row = self.db.fetch_one("SELECT so_luong, ma_do, khoa_giao FROM lich_su_giao_nhan WHERE id=%s", (pid,))
+                if not row: continue
+                sl_goc = int(row['so_luong'])
+                
+                # 2. Tạo log (rửa thủ công)
+                if sl_chon >= sl_goc:
+                    self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai='DA_KHU_NHIEM' WHERE id=%s", (pid,))
+                else:
+                    self.db.execute("UPDATE lich_su_giao_nhan SET so_luong=so_luong-%s WHERE id=%s", (sl_chon, pid))
+                    self.db.execute("""
+                        INSERT INTO lich_su_giao_nhan (ma_do, so_luong, khoa_giao, phuong_phap, thoi_gian, nguoi_giao, trang_thai)
+                        VALUES (%s, %s, %s, %s, NOW(), %s, 'DA_KHU_NHIEM')
+                    """, (row['ma_do'], sl_chon, row['khoa_giao'], phuong_phap, nguoi_thuc_hien))
                     
-                    # 1. Check database lấy số lượng gốc
-                    req = self.db.fetch_one("SELECT * FROM lich_su_giao_nhan WHERE id=%s", (pid,))
-                    if not req: continue
-                    sl_goc = int(req['so_luong'])
-                    
-                    # 2. Logic Tách Phiếu
-                    if sl_chon < sl_goc:
-                        sl_con_lai = sl_goc - sl_chon
-                        # Clone phiếu mới cho số thừa lại, giữ nguyên trạng thái cũ
-                        self.db.execute("""INSERT INTO lich_su_giao_nhan 
-                            (khoa_giao, ma_do, so_luong, trang_thai, thoi_gian, ma_phieu) 
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)""", 
-                            (req['khoa_giao'], req['ma_do'], sl_con_lai, req['trang_thai'], req['thoi_gian'], req['ma_phieu']))
-                        
-                        # Cập nhật phiếu hiện tại thành số lượng đưa vào máy
-                        self.db.execute("UPDATE lich_su_giao_nhan SET so_luong=%s, trang_thai='DA_KHU_NHIEM' WHERE id=%s", (sl_chon, pid))
-                    else:
-                        # Chọn hết thì chỉ cần update trạng thái
-                        self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai='DA_KHU_NHIEM' WHERE id=%s", (pid,))
-                    
-                    # 3. Lưu log
-                    self.db.execute("INSERT INTO lich_su_bien_dong (thoi_gian, nguoi_thuc_hien, bang_du_lieu, ma_item, noi_dung) VALUES (NOW(), %s, %s, %s, %s)", 
-                           (nguoi_thuc_hien, 'lich_su_giao_nhan', pid, f"Khử nhiễm ({phuong_phap}) - SL: {sl_chon}"))
-                    
-            QMessageBox.information(self.view, "Thành công", f"Đã khử nhiễm ({phuong_phap}) xong!")
-            self.view.tree_cart.clear()
+            QMessageBox.information(self.view, "Thành công", "Đã ghi nhận Khử Nhiễm (Thủ công)!")
             self.load_sessions()
             
         except Exception as e:
-            QMessageBox.warning(self.view, "Lỗi", f"Có lỗi xảy ra: {e}")
-
+            QMessageBox.critical(self.view, "Lỗi", f"Lỗi khi lưu dữ liệu: {e}")
 
     def open_washing_machine_dialog(self):
         """Mở dialog chọn máy giặt và chu trình"""
@@ -707,3 +543,62 @@ class DecontaminationController(QObject):
             if hasattr(self, '_wash_timer'):
                 self._wash_timer.stop()
             self.complete_washing_machine(mac_id, mac['name'])
+
+    def start_washing_machine(self, mac_id, cycle_id):
+        selected_items = getattr(self, 'temp_selected_items', [])
+        if not selected_items: return
+        
+        nguoi_thuc_hien = self.view.cb_employee.currentText()
+        phuong_phap = "Rửa Máy"
+        
+        try:
+            # Get cycle info
+            cycle = self.db.fetch_one("SELECT thoi_gian_phut FROM danh_muc_chu_trinh WHERE id=%s", (cycle_id,))
+            mins = int(cycle['thoi_gian_phut']) if cycle else 30
+            
+            from datetime import datetime, timedelta
+            end_time = datetime.now() + timedelta(minutes=mins)
+            
+            loaded_ids = []
+            
+            for p_data in selected_items:
+                pid = p_data['id']
+                sl_chon = p_data['sl']
+                
+                row = self.db.fetch_one("SELECT so_luong, ma_do, khoa_giao FROM lich_su_giao_nhan WHERE id=%s", (pid,))
+                if not row: continue
+                sl_goc = int(row['so_luong'])
+                
+                if sl_chon >= sl_goc:
+                    self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai='DANG_RUA_MAY' WHERE id=%s", (pid,))
+                    loaded_ids.append({'id': pid, 'ma_do': row['ma_do'], 'sl': sl_chon})
+                else:
+                    self.db.execute("UPDATE lich_su_giao_nhan SET so_luong=so_luong-%s WHERE id=%s", (sl_chon, pid))
+                    new_id = self.db.execute("""
+                        INSERT INTO lich_su_giao_nhan (ma_do, so_luong, khoa_giao, phuong_phap, thoi_gian, nguoi_giao, trang_thai)
+                        VALUES (%s, %s, %s, %s, NOW(), %s, 'DANG_RUA_MAY')
+                    """, (row['ma_do'], sl_chon, row['khoa_giao'], phuong_phap, nguoi_thuc_hien))
+                    loaded_ids.append({'id': new_id, 'ma_do': row['ma_do'], 'sl': sl_chon})
+            
+            import json
+            items_json = json.dumps(loaded_ids)
+            
+            self.db.execute("""
+                UPDATE machines 
+                SET status='RUNNING', current_cycle_id=%s, employee_name=%s, end_time=%s, loaded_items_json=%s 
+                WHERE id=%s
+            """, (cycle_id, nguoi_thuc_hien, end_time, items_json, mac_id))
+            
+            # Ghi lịch sử biến động
+            self.db.execute("""
+                INSERT INTO lich_su_bien_dong_may (machine_id, status_from, status_to, note) 
+                VALUES (%s, 'READY', 'RUNNING', %s)
+            """, (mac_id, f"Bắt đầu chu trình {cycle_id}"))
+            
+            QMessageBox.information(self.view, "Thành công", f"Máy {mac_id} bắt đầu chạy!")
+            self.load_sessions()
+            
+        except Exception as e:
+            QMessageBox.critical(self.view, "Lỗi", f"Lỗi khi lưu dữ liệu: {e}")
+
+

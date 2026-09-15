@@ -29,37 +29,24 @@ class DecontaminationPage(QWidget):
         self.dt_date.setDate(QDate.currentDate())
         self.dt_date.setMinimumWidth(150)
         
-        lbl_session = QLabel("Phiên Giao Nhận:")
-        self.cb_sessions = QComboBox()
-        self.cb_sessions.setMinimumWidth(250)
-        
-        self.btn_select_items = QPushButton("Chọn đồ vào giỏ")
-        self.btn_select_items.setStyleSheet("background-color: #3498db; color: white; font-weight: bold; padding: 8px 15px; border-radius: 4px;")
-        
-        top_layout.addWidget(lbl_date)
-        top_layout.addWidget(self.dt_date)
-        top_layout.addSpacing(20)
-        top_layout.addWidget(lbl_session)
-        top_layout.addWidget(self.cb_sessions)
-        top_layout.addSpacing(20)
-        
         lbl_emp = QLabel("Người thực hiện:")
         self.cb_employee = QComboBox()
         self.cb_employee.setMinimumWidth(150)
         
+        top_layout.addWidget(lbl_date)
+        top_layout.addWidget(self.dt_date)
+        top_layout.addSpacing(20)
         top_layout.addWidget(lbl_emp)
         top_layout.addWidget(self.cb_employee)
-        top_layout.addSpacing(20)
-        
-        top_layout.addWidget(self.btn_select_items)
         top_layout.addStretch()
         
         layout.addLayout(top_layout)
         layout.addSpacing(10)
         
-        # TreeView (Giỏ hàng)
+        # TreeView (Giỏ hàng - hiển thị toàn bộ đồ chờ)
         self.tree_cart = QTreeWidget()
-        self.tree_cart.setHeaderLabels(["Mã đồ", "Tên đồ", "Số lượng"])
+        self.tree_cart.setHeaderLabels(["Phiên Giao Nhận / Mã đồ", "Tên đồ", "SL Chọn Khử Nhiễm"])
+        self.tree_cart.header().setSectionResizeMode(0, QHeaderView.Stretch)
         self.tree_cart.header().setSectionResizeMode(1, QHeaderView.Stretch)
         layout.addWidget(self.tree_cart)
         

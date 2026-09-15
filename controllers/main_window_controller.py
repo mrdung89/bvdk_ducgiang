@@ -53,7 +53,7 @@ class MainWindowController(QObject):
         if self.role in ["ADMIN", "STAFF", "NV_KSNK", "LANH_DAO"]:
             self.page_decon = DecontaminationPage()
             self.controller_decon = DecontaminationController(self.page_decon, self.user_data)
-            self.page_assembly = AssemblyPage()
+            self.page_assembly = AssemblyPage(self.user_data)
             self.page_sterilize = SterilizationPage()
             from controllers.sterilization_controller import SterilizationController
             self.controller_sterilize = SterilizationController(self.page_sterilize, self.user_data)

@@ -10,15 +10,17 @@ import math
 import os
 
 class AssemblyPage(QWidget):
-    def __init__(self):
+    def __init__(self, user_data=None):
         super().__init__()
+        self.user_data = user_data or {}
+        self.user_fullname = self.user_data.get("ho_ten", "NV KSNK")
         self.db = DBManager()
         self.list_items = []
         self.map_ma_phien = {}
         
         self.setup_ui()
         backend.CURRENT_PRINTER_NAME = None
-        backend.CURRENT_USER_FULLNAME = 'NV KSNK'
+        backend.CURRENT_USER_FULLNAME = self.user_fullname
         self.refresh_session_cb()
         
     def setup_ui(self):
@@ -129,6 +131,7 @@ class AssemblyPage(QWidget):
         btn_thu_cong = QPushButton("IN THỦ CÔNG")
         btn_thu_cong.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold;")
         fr_b.addWidget(btn_thu_cong)
+        btn_thu_cong.clicked.connect(self.show_manual_print)
         body_layout.addLayout(fr_b)
         
         layout.addWidget(fr_body)
@@ -291,7 +294,7 @@ class AssemblyPage(QWidget):
         loai_str = "thu_thuat" if str(is_le) == "thu_thuat" else ("LẺ" if is_le else "BỘ")
         
         try:
-            path = backend.tao_anh_tem(item_id, t, k_ten, k_ten, today.strftime('%d/%m/%Y'), han.strftime('%d/%m/%Y'), loai_str, "NV KSNK", pp)
+            path = backend.tao_anh_tem(item_id, t, k_ten, k_ten, today.strftime('%d/%m/%Y'), han.strftime('%d/%m/%Y'), loai_str, self.user_fullname, pp)
             # Fetch default printer
             for _ in range(n):
                 backend.thuc_hien_in(path)
@@ -318,3 +321,68 @@ class AssemblyPage(QWidget):
                     self.do_print(i['id'], i['is_le'], i['ten'], i['khoa_ten'], i['han'], i['pp'], n)
                     c += n
         self.lbl_status.setText(f"Đã in xong {c} tem ({mode})")
+
+    def show_manual_print(self):
+        from PySide6.QtWidgets import QDialog
+        class ManualPrintDialog(QDialog):
+            def __init__(self, parent):
+                super().__init__(parent)
+                self.setWindowTitle("In Tem Thủ Công")
+                self.resize(400, 300)
+                layout = QVBoxLayout(self)
+                
+                layout.addWidget(QLabel("Tên dụng cụ/bộ:"))
+                self.t_ten = QLineEdit()
+                layout.addWidget(self.t_ten)
+                
+                layout.addWidget(QLabel("Khoa:"))
+                self.t_khoa = QLineEdit()
+                layout.addWidget(self.t_khoa)
+                
+                layout.addWidget(QLabel("Hạn (ngày):"))
+                self.t_han = QSpinBox()
+                self.t_han.setRange(1, 365)
+                self.t_han.setValue(30)
+                layout.addWidget(self.t_han)
+                
+                layout.addWidget(QLabel("Loại:"))
+                self.cb_loai = QComboBox()
+                self.cb_loai.addItems(["Bộ", "Đồ Lẻ", "Thủ thuật"])
+                layout.addWidget(self.cb_loai)
+                
+                layout.addWidget(QLabel("Phương pháp:"))
+                self.cb_pp = QComboBox()
+                self.cb_pp.addItems(["STEAM", "EO", "PLASMA"])
+                layout.addWidget(self.cb_pp)
+                
+                layout.addWidget(QLabel("Số lượng in:"))
+                self.t_sl = QSpinBox()
+                self.t_sl.setRange(1, 100)
+                self.t_sl.setValue(1)
+                layout.addWidget(self.t_sl)
+                
+                btn_in = QPushButton("IN NGAY")
+                btn_in.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold; padding: 10px;")
+                btn_in.clicked.connect(self.accept)
+                layout.addWidget(btn_in)
+
+        dlg = ManualPrintDialog(self)
+        if dlg.exec():
+            ten = dlg.t_ten.text().strip()
+            khoa = dlg.t_khoa.text().strip()
+            han = dlg.t_han.value()
+            loai = dlg.cb_loai.currentText()
+            pp = dlg.cb_pp.currentText()
+            sl = dlg.t_sl.value()
+            
+            if not ten:
+                QMessageBox.warning(self, "Lỗi", "Vui lòng nhập tên đồ cần in!")
+                return
+                
+            is_le = False
+            if loai == "Đồ Lẻ": is_le = True
+            elif loai == "Thủ thuật": is_le = "thu_thuat"
+            
+            # Use dummy ID for manual print
+            item_id = "MANUAL"
+            self.do_print(item_id, is_le, ten, khoa, han, pp, sl)

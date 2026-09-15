@@ -235,6 +235,20 @@ class ReceivePage(QWidget):
                         
                         if ts_ymd != sel_ymd:
                             continue
+                            
+                        # Extract real time instead of 23:59:59
+                        time_part = "23:59:59"
+                        if ' ' in ts:
+                            try:
+                                t_str = ts.split(' ', 1)[1].strip()
+                                parts = t_str.split(':')
+                                if len(parts) == 2:
+                                    time_part = f"{parts[0].zfill(2)}:{parts[1].zfill(2)}:00"
+                                elif len(parts) >= 3:
+                                    time_part = f"{parts[0].zfill(2)}:{parts[1].zfill(2)}:{parts[2][:2].zfill(2)}"
+                            except: pass
+                        
+                        actual_time = f"{ts_ymd} {time_part}"
                         
                         # Insert one row per item that has quantity > 0
                         for col_name in item_cols:
@@ -255,13 +269,12 @@ class ReceivePage(QWidget):
                                 ma_do = mapped['ma_do']
                                 loai_ghi = mapped['loai'] or 'vai'
                             else:
-                                # Save full name as ma_do - user can map later
                                 ma_do = col_str[:100]
                                 loai_ghi = 'khac'
                             
                             self.db.execute(
                                 "INSERT INTO lich_su_giao_nhan (khoa_giao, ma_do, so_luong, thoi_gian, trang_thai) VALUES (%s, %s, %s, %s, %s)",
-                                (khoa[:100], ma_do, sl, target_time, 'CHO_TIEP_NHAN')
+                                (khoa[:100], ma_do, sl, actual_time, 'CHO_TIEP_NHAN')
                             )
                             count += 1
                 except Exception as e2:

@@ -132,20 +132,13 @@ class DashboardController(QObject):
 
     def show_drilldown_chay(self):
         date_str = self.view.date_edit.date().toString("yyyy-MM-dd")
-        sessions = self.db.get_kpi_sterilized_drilldown(date_str)
-        if not sessions:
+        items = self.db.get_kpi_sterilized_drilldown(date_str)
+        if not items:
+            from PySide6.QtWidgets import QMessageBox
             QMessageBox.information(self.view, "Thông báo", "Không có dữ liệu mẻ chạy.")
             return
             
-        # Flatten details
-        all_items = []
-        for s in sessions:
-            details = s.get('details', [])
-            for d in details:
-                d['session_info'] = f"Chu trình {s['ma_phien']} - {s['ten_may']}"
-                all_items.append(d)
-                
-        dlg = TraceabilityDialog(f"Thiết bị đã xử lý ({date_str})", all_items, self.view)
+        dlg = TraceabilityDialog(f"Thiết bị đã xử lý ({date_str})", items, self.view)
         dlg.exec()
 
     def show_drilldown_kho(self):
@@ -191,7 +184,7 @@ class DashboardController(QObject):
         kw_clean = remove_accents(keyword)
         date_str = self.view.date_edit.date().toString("yyyy-MM-dd")
         
-        sql = "SELECT loai_do, ma_do, so_luong, thoi_gian FROM lich_su_giao_nhan WHERE DATE(thoi_gian) = %s AND LOWER(khoa) LIKE %s"
+        sql = "SELECT ma_do, so_luong, thoi_gian FROM lich_su_giao_nhan WHERE DATE(thoi_gian) = %s AND LOWER(khoa_giao) LIKE %s"
         dept_history = self.db.fetch_all(sql, (date_str, f"%{kw_clean}%"))
         
         if dept_history:

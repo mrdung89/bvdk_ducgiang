@@ -375,64 +375,32 @@ class DBManager:
     # --- DASHBOARD METHODS EXTRACTED FROM GS.PY ---
     def get_kpi_summary_v2(self, date_str):
         """Lấy 4 KPI quan trọng cho Dashboard Giám Sát"""
-        # 1. Nhận hôm nay (Tổng số Khoa đã giao)
-        sql_nhan = """
-            SELECT COUNT(DISTINCT khoa) as cnt FROM (
-                SELECT khoa FROM lich_su_giao_nhan WHERE DATE(thoi_gian) = %s
-                UNION ALL
-                SELECT khoa FROM lich_su_giao_nhan_thu_thuat WHERE DATE(gio_giao) = %s
-            ) as tmp
-        """
-        # 3. Đã xử lý (Số chu trình chạy hôm nay)
-        sql_chay = "SELECT COUNT(*) as cnt FROM lich_su_van_hanh WHERE DATE(thoi_gian) = %s"
-        
-        # 4. Kho sạch (Sẵn sàng cấp phát) từ vòng lặp tiệt khuẩn thực tế
-        sql_kho_sach = """
-            SELECT SUM(available) as cnt FROM (
-                SELECT (SUM(ct.so_luong) - IFNULL(T_DIST.total_distributed, 0)) as available
-                FROM chi_tiet_chu_trinh_van_hanh ct 
-                JOIN lich_su_van_hanh ls ON ct.ma_phien_van_hanh = ls.ma_phien
-                LEFT JOIN (
-                    SELECT CASE WHEN bo_id IS NOT NULL THEN bo_id ELSE dung_cu_id END as id_goc,
-                           CASE WHEN bo_id IS NOT NULL THEN 'bo_dung_cu' ELSE 'do_dong_le' END as loai_goc,
-                           SUM(so_luong) as total_distributed 
-                    FROM lich_su_cap_phat WHERE IFNULL(loai_phieu, 'CAP_PHAT') IN ('CAP_PHAT', 'RESET_SACH')
-                    GROUP BY id_goc, loai_goc
-                ) T_DIST ON ct.id_goc = T_DIST.id_goc AND ct.loai_goc = T_DIST.loai_goc
-                WHERE ls.trang_thai = 'COMPLETED' 
-                GROUP BY ct.id_goc, ct.loai_goc, T_DIST.total_distributed
-            ) sub WHERE available > 0
-        """
-        
-        # 2. Chờ xử lý (Chưa hấp)
-        sql_cho_xu_ly = """
-            SELECT SUM(cho) as cnt FROM (
-                SELECT (IFNULL(nhan.t, 0) - IFNULL(hap.t, 0)) as cho FROM (
-                    SELECT CASE WHEN bo_id IS NOT NULL THEN bo_id ELSE dung_cu_id END as id_goc,
-                           CASE WHEN bo_id IS NOT NULL THEN 'bo_dung_cu' ELSE 'do_dong_le' END as loai_goc,
-                           SUM(so_luong) as t FROM lich_su_giao_nhan GROUP BY id_goc, loai_goc
-                ) nhan
-                LEFT JOIN (
-                    SELECT ct.id_goc, ct.loai_goc, SUM(ct.so_luong) as t FROM chi_tiet_chu_trinh_van_hanh ct
-                    JOIN lich_su_van_hanh ls ON ct.ma_phien_van_hanh = ls.ma_phien WHERE ls.trang_thai='COMPLETED'
-                    GROUP BY ct.id_goc, ct.loai_goc
-                ) hap ON nhan.id_goc = hap.id_goc AND nhan.loai_goc = hap.loai_goc
-            ) sub WHERE cho > 0
-        """
-        
         try:
-            nhan = self.fetch_all(sql_nhan, (date_str, date_str))
-            cho = self.fetch_all(sql_cho_xu_ly)
-            chay = self.fetch_all(sql_chay, (date_str,))
-            kho = self.fetch_all(sql_kho_sach)
+            # 1. Nhận hôm nay (Tổng số Khoa đã giao)
+            sql_nhan = "SELECT COUNT(DISTINCT khoa_giao) as cnt FROM lich_su_giao_nhan WHERE DATE(thoi_gian) = %s"
+            nhan_rows = self.fetch_all(sql_nhan, (date_str,))
+            nhan = nhan_rows[0]['cnt'] if nhan_rows else 0
             
-            # Plus thu thuat
-            # Cho đơn giản, tính luôn đồ thủ thuật vào kho sạch nếu muốn, nhưng hiện tại query đã quá dài
+            # 2. Chờ xử lý (Chưa hấp xong)
+            sql_cho = "SELECT SUM(so_luong) as cnt FROM lich_su_giao_nhan WHERE trang_thai NOT IN ('CHO_CAP_PHAT', 'DA_CAP_PHAT')"
+            cho_rows = self.fetch_all(sql_cho)
+            cho = int(cho_rows[0]['cnt']) if cho_rows and cho_rows[0]['cnt'] else 0
+            
+            # 3. Đã hấp (Mẻ) hôm nay
+            sql_hap = "SELECT COUNT(*) as cnt FROM runs WHERE status='COMPLETED' AND date=%s"
+            hap_rows = self.fetch_all(sql_hap, (date_str,))
+            hap = hap_rows[0]['cnt'] if hap_rows else 0
+            
+            # 4. Kho sạch (Món)
+            sql_kho = "SELECT SUM(so_luong) as cnt FROM lich_su_giao_nhan WHERE trang_thai = 'CHO_CAP_PHAT'"
+            kho_rows = self.fetch_all(sql_kho)
+            kho = int(kho_rows[0]['cnt']) if kho_rows and kho_rows[0]['cnt'] else 0
+            
             return {
-                "nhan": nhan[0]['cnt'] if nhan else 0,
-                "cho_xu_ly": int(cho[0]['cnt']) if cho and cho[0]['cnt'] else 0,
-                "da_xu_ly": chay[0]['cnt'] if chay else 0,
-                "kho_sach": int(kho[0]['cnt']) if kho and kho[0]['cnt'] else 0
+                "nhan": nhan,
+                "cho_xu_ly": cho,
+                "da_xu_ly": hap,
+                "kho_sach": kho
             }
         except Exception as e: 
             print("Lỗi dash stats:", e)
@@ -450,180 +418,38 @@ class DBManager:
         return self.fetch_all(sql, (f"%{keyword}%", f"%{kw_clean}%")) or []
 
     def get_traceability_timeline(self, keyword):
-        """Truy xuất dòng thời gian của 1 dụng cụ (Bộ) và phân rã thành chu kỳ"""
-        import unicodedata
-        def remove_accents(input_str):
-            nfkd_form = unicodedata.normalize('NFKD', input_str)
-            return u"".join([c for c in nfkd_form if not unicodedata.combining(c)]).lower()
-            
-        if keyword.isdigit():
-            # Nếu là số nguyên, tìm chính xác theo mã QR hoặc ID
-            sql_find = "SELECT id, ma_qr, ten_bo, khoa, trang_thai FROM bo_dung_cu WHERE ma_qr = %s OR id = %s LIMIT 1"
-            bos = self.fetch_all(sql_find, (keyword, keyword))
-        else:
-            # Tìm chính xác tương đối theo tên bộ
-            kw_clean = remove_accents(keyword)
-            sql_find = "SELECT id, ma_qr, ten_bo, khoa, trang_thai FROM bo_dung_cu WHERE ten_bo LIKE %s OR ten_bo_chuan_hoa LIKE %s LIMIT 1"
-            bos = self.fetch_all(sql_find, (f"%{keyword}%", f"%{kw_clean}%"))
-        
-        if not bos: return None
-
-        bo = bos[0]
-        bo_id = bo['id']
-        
-        # 1. Nhận
-        nhan = self.fetch_all("SELECT thoi_gian as dt, ma_phien, khoa, nguoi_nhan as nv, 'nhan' as stage FROM lich_su_giao_nhan WHERE bo_id = %s", (bo_id,)) or []
-        # 2. Checklist
-        chk = self.fetch_all("SELECT thoi_gian_checklist as dt, ma_phien, nv_kktk, nv_xu_ly, trang_thai_bo, ghi_chu_bo, 'checklist' as stage FROM lich_su_checklist WHERE id_bo = %s", (bo_id,)) or []
-        # 3. Hấp
-        hap = self.fetch_all("""SELECT v.thoi_gian as dt, v.ma_phien, v.ten_may, v.nhan_vien as nv, v.duong_dan_anh_online, 'hap' as stage 
-            FROM lich_su_van_hanh v JOIN chi_tiet_chu_trinh_van_hanh c ON v.ma_phien = c.ma_phien_van_hanh 
-            WHERE c.id_goc = %s AND (c.loai_goc = 'bo_dung_cu' OR UPPER(c.loai_goc) = 'BO' OR UPPER(c.loai_goc) = 'BỘ')""", (bo_id,)) or []
-        # 4. Cấp
-        cap = self.fetch_all("SELECT thoi_gian as dt, khoa, nguoi_cap as nv, 'cap' as stage FROM lich_su_cap_phat WHERE bo_id = %s", (bo_id,)) or []
-        
-        # Gộp và sort sự kiện
-        all_events = nhan + chk + hap + cap
-        for ev in all_events:
-            if not ev['dt']: ev['dt'] = datetime.min
-        all_events.sort(key=lambda x: x['dt'])
-        
-        # State machine phân tách Chu Kỳ
-        cycles = []
-        current_cycle = {"nhan": None, "checklist": None, "hap": None, "cap": None}
-        
-        for ev in all_events:
-            stage = ev['stage']
-            
-            # Format time
-            if ev['dt'] and ev['dt'] != datetime.min:
-                ev['thoi_gian_str'] = ev['dt'].strftime('%d/%m/%Y %H:%M:%S')
-            else:
-                ev['thoi_gian_str'] = ''
-                
-            # Logic tách chu kỳ:
-            # Nếu gặp Nhận hoặc Checklist MÀ chu kỳ hiện tại ĐÃ CÓ Hấp hoặc Cấp (hoặc đã có sẵn Nhận/Checklist trước đó)
-            if stage in ('nhan', 'checklist'):
-                if current_cycle['hap'] or current_cycle['cap'] or current_cycle[stage]:
-                    cycles.append(current_cycle)
-                    current_cycle = {"nhan": None, "checklist": None, "hap": None, "cap": None}
-            
-            current_cycle[stage] = ev
-            
-        if any(current_cycle.values()):
-            cycles.append(current_cycle)
-            
-        return {"bo_info": bo, "cycles": cycles}
-
-    def get_machine_batch_stats(self, date_str):
+        """Truy vết dựa trên lich_su_giao_nhan"""
+        id_val = int(keyword) if keyword.isdigit() else 0
         sql = """
-            SELECT ten_may, COUNT(*) as so_me 
-            FROM lich_su_van_hanh 
-            WHERE DATE(thoi_gian) = %s 
-            GROUP BY ten_may
-        """
-        return self.fetch_all(sql, (date_str,)) or []
-
-    def get_receiving_breakdown(self, date_str):
-        sql = """
-            SELECT khoa, COUNT(*) as tong 
+            SELECT id, khoa_giao, ma_do, so_luong, trang_thai, thoi_gian, ma_phieu 
             FROM lich_su_giao_nhan 
-            WHERE DATE(thoi_gian) = %s 
-            GROUP BY khoa 
-            ORDER BY tong DESC
+            WHERE ma_do LIKE %s OR id = %s
+            ORDER BY thoi_gian DESC LIMIT 1
         """
-        return self.fetch_all(sql, (date_str,)) or []
-
-    def get_distribution_balance(self, date_str):
-        sql = """
-            SELECT 
-                k.ten_khoa as khoa,
-                IFNULL(nhan.cnt, 0) as da_nhan,
-                IFNULL(tra.cnt, 0) as da_tra,
-                IFNULL(ton.available_total, 0) as con_lai_trong_kho
-            FROM 
-                (SELECT DISTINCT ten_khoa FROM khoa_phau_thuat UNION SELECT DISTINCT ten_khoa FROM khoa_thu_thuat) k
-            LEFT JOIN (
-                SELECT khoa, SUM(so_luong) as cnt FROM lich_su_giao_nhan WHERE DATE(thoi_gian) = %s GROUP BY khoa
-            ) nhan ON k.ten_khoa = nhan.khoa
-            LEFT JOIN (
-                SELECT khoa, SUM(so_luong) as cnt FROM lich_su_cap_phat WHERE DATE(thoi_gian) = %s GROUP BY khoa
-            ) tra ON k.ten_khoa = tra.khoa
-            LEFT JOIN (
-                SELECT ct.khoa as khoa, (SUM(ct.so_luong) - IFNULL(T_DIST.total_distributed, 0)) as available_total
-                FROM chi_tiet_chu_trinh_van_hanh ct 
-                JOIN lich_su_van_hanh ls ON ct.ma_phien_van_hanh = ls.ma_phien
-                LEFT JOIN (
-                    SELECT khoa, SUM(so_luong) as total_distributed 
-                    FROM lich_su_cap_phat WHERE IFNULL(loai_phieu, 'CAP_PHAT') IN ('CAP_PHAT', 'RESET_SACH')
-                    GROUP BY khoa
-                ) T_DIST ON ct.khoa = T_DIST.khoa
-                WHERE ls.trang_thai = 'COMPLETED' 
-                GROUP BY ct.khoa, T_DIST.total_distributed
-            ) ton ON k.ten_khoa = ton.khoa
-            WHERE IFNULL(nhan.cnt, 0) > 0 OR IFNULL(ton.available_total, 0) > 0
-            ORDER BY con_lai_trong_kho DESC
-        """
-        return self.fetch_all(sql, (date_str, date_str)) or []
-
-    def get_chart_data_7days(self, start_str, end_str):
-        sql = """
-            SELECT DATE(thoi_gian) as ngay, ten_may, COUNT(*) as so_me
-            FROM lich_su_van_hanh WHERE thoi_gian BETWEEN %s AND %s
-            GROUP BY DATE(thoi_gian), ten_may ORDER BY ngay
-        """
-        return self.fetch_all(sql, (start_str, end_str)) or []
-
-    def get_realtime_machines(self):
-        sql = "SELECT ten_may, trang_thai, thoi_gian_bat_dau, thoi_gian_du_kien, khu_vuc FROM danh_sach_may ORDER BY khu_vuc, ten_may"
-        return self.fetch_all(sql) or []
-
-
-    def get_universal_traceability(self, id_goc, loai_goc):
-        # Giữ lại hàm này phòng khi cần gọi đơn lẻ
-        trace = {"nhan": None, "hap": None, "cap": None}
+        rows = self.fetch_all(sql, (f"%{keyword}%", id_val))
+        if not rows: return None
         
-        loai_goc_str = str(loai_goc).upper()
-        if 'THU_THUAT' in loai_goc_str:
-            loai_goc_std = 'THU_THUAT'
-        elif 'BO' == loai_goc_str or 'BỘ' in loai_goc_str:
-            loai_goc_std = 'BO'
-        else:
-            loai_goc_std = 'DONG_LE'
+        latest = rows[0]
+        
+        bo_info = {
+            "ten_bo": latest['ma_do'],
+            "trang_thai": latest['trang_thai']
+        }
+        
+        cycle = {
+            'nhan': {'thoi_gian_str': latest['thoi_gian'].strftime('%H:%M %d/%m/%Y') if hasattr(latest['thoi_gian'], 'strftime') else str(latest['thoi_gian']), 'ma_phien': latest['ma_phieu'] or 'Chưa tạo'}
+        }
+        
+        if latest['trang_thai'] in ['CHO_CAP_PHAT', 'DA_CAP_PHAT']:
+            cycle['hap'] = {'thoi_gian_str': 'Hoàn thành', 'ma_phien': 'OK'}
             
-        if loai_goc_std == 'BO':
-            sql_nhan = "SELECT thoi_gian, khoa, nguoi_nhan as nhan_vien FROM lich_su_giao_nhan WHERE bo_id = %s ORDER BY thoi_gian DESC LIMIT 1"
-        elif loai_goc_std == 'THU_THUAT':
-            sql_nhan = "SELECT gio_giao as thoi_gian, khoa, nguoi_nhan as nhan_vien FROM lich_su_giao_nhan_thu_thuat WHERE dung_cu_id = %s ORDER BY gio_giao DESC LIMIT 1"
-        else:
-            sql_nhan = "SELECT thoi_gian, khoa, nguoi_nhan as nhan_vien FROM lich_su_giao_nhan WHERE dung_cu_id = %s ORDER BY thoi_gian DESC LIMIT 1"
-        nhan = self.fetch_all(sql_nhan, (id_goc,))
-        if nhan: trace["nhan"] = nhan[0]
-
-        sql_hap = """
-            SELECT v.ma_phien, v.ten_may, v.thoi_gian, v.nhan_vien, v.trang_thai 
-            FROM lich_su_van_hanh v
-            JOIN chi_tiet_chu_trinh_van_hanh c ON v.ma_phien = c.ma_phien_van_hanh
-            WHERE c.id_goc = %s AND (c.loai_goc = %s OR UPPER(c.loai_goc) = %s)
-            ORDER BY v.thoi_gian DESC LIMIT 1
-        """
-        hap = self.fetch_all(sql_hap, (id_goc, loai_goc, loai_goc_std))
-        if hap: trace["hap"] = hap[0]
-
-        if loai_goc_std == 'BO':
-            sql_cap = "SELECT thoi_gian, khoa, nguoi_cap as nhan_vien FROM lich_su_cap_phat WHERE bo_id = %s ORDER BY thoi_gian DESC LIMIT 1"
-        elif loai_goc_std == 'THU_THUAT':
-            sql_cap = "SELECT gio_cap as thoi_gian, khoa, nguoi_cap as nhan_vien FROM lich_su_cap_phat_thu_thuat WHERE dung_cu_id = %s ORDER BY gio_cap DESC LIMIT 1"
-        else:
-            sql_cap = "SELECT thoi_gian, khoa, nguoi_cap as nhan_vien FROM lich_su_cap_phat WHERE dung_cu_id = %s ORDER BY thoi_gian DESC LIMIT 1"
-        cap = self.fetch_all(sql_cap, (id_goc,))
-        if cap: trace["cap"] = cap[0]
-        
-        for stage in trace:
-            if trace[stage] and 'thoi_gian' in trace[stage] and trace[stage]['thoi_gian']:
-                trace[stage]['thoi_gian'] = trace[stage]['thoi_gian'].strftime('%d/%m/%Y %H:%M:%S')
-                
-        return trace
+        if latest['trang_thai'] == 'DA_CAP_PHAT':
+            cycle['cap'] = {'thoi_gian_str': 'Đã giao', 'ma_phien': 'OK'}
+            
+        return {
+            "bo_info": bo_info,
+            "cycles": [cycle]
+        }
 
     def _get_bulk_trace(self, date_str):
         # Store lists of events to handle multiple cycles per day
@@ -668,156 +494,56 @@ class DBManager:
 
     def get_kpi_received_drilldown(self, date_str):
         sql = """
-            SELECT 
-                'BO' as loai_goc,
-                n.bo_id as id_goc, 
-                b.ten_bo as ten,
-                n.thoi_gian, n.khoa, n.so_luong, n.nguoi_nhan as nhan_vien, n.ma_phien
-            FROM lich_su_giao_nhan n
-            JOIN bo_dung_cu b ON n.bo_id = b.id
-            WHERE DATE(n.thoi_gian) = %s AND n.bo_id IS NOT NULL
-            
-            UNION ALL
-            
-            SELECT 
-                'DONG_LE' as loai_goc,
-                n.dung_cu_id as id_goc, 
-                d.ten_dung_cu as ten,
-                n.thoi_gian, n.khoa, n.so_luong, n.nguoi_nhan as nhan_vien, n.ma_phien
-            FROM lich_su_giao_nhan n
-            JOIN do_dong_le d ON n.dung_cu_id = d.id
-            WHERE DATE(n.thoi_gian) = %s AND n.dung_cu_id IS NOT NULL
-            
-            UNION ALL
-            
-            SELECT 
-                'THU_THUAT' as loai_goc,
-                n.dung_cu_id as id_goc, 
-                d.ten_dung_cu as ten,
-                n.gio_giao as thoi_gian, n.khoa, n.so_luong, n.nguoi_nhan as nhan_vien, n.ma_phien
-            FROM lich_su_giao_nhan_thu_thuat n
-            JOIN danh_muc_dung_cu_thu_thuat d ON n.dung_cu_id = d.id
-            WHERE DATE(n.gio_giao) = %s
-            
-            ORDER BY thoi_gian DESC
+            SELECT khoa_giao as khoa, ma_do as ten, so_luong, trang_thai, thoi_gian, ma_phieu 
+            FROM lich_su_giao_nhan 
+            WHERE DATE(thoi_gian) = %s
         """
-        items = self.fetch_all(sql, (date_str, date_str, date_str)) or []
-        
-        # Tối ưu Bulk map
-        hap_map, cap_map = self._get_bulk_trace(date_str)
-        
-        for item in items:
-            key = (item['id_goc'], item['loai_goc'])
-            item_dt = item['thoi_gian']
-            nhan = {"thoi_gian": item_dt.strftime('%d/%m/%Y %H:%M:%S') if item_dt else "", "khoa": item['khoa'], "nhan_vien": item['nhan_vien']}
-            
-            # Find first hap AFTER nhan
-            hap = None
-            for h in hap_map.get(key, []):
-                if h['dt'] >= item_dt:
-                    hap = h
-                    break
-                    
-            # Find first cap AFTER hap (or nhan if no hap)
-            cap = None
-            base_dt = hap['dt'] if hap else item_dt
-            for c in cap_map.get(key, []):
-                if c['dt'] >= base_dt:
-                    cap = c
-                    break
-                    
-            item['trace'] = {"nhan": nhan, "hap": hap, "cap": cap}
-            if item['thoi_gian']:
-                item['thoi_gian'] = item['thoi_gian'].strftime('%d/%m/%Y %H:%M:%S')
+        rows = self.fetch_all(sql, (date_str,))
+        items = []
+        for r in rows:
+            trace = {'nhan': {'thoi_gian': r['thoi_gian'].strftime('%H:%M %d/%m') if hasattr(r['thoi_gian'], 'strftime') else str(r['thoi_gian'])[:16], 'khoa': r['khoa'], 'nhan_vien': ''}}
+            if r['trang_thai'] in ['CHO_CAP_PHAT', 'DA_CAP_PHAT']:
+                trace['hap'] = {'thoi_gian': 'Hoàn thành', 'ten_may': 'N/A', 'nhan_vien': ''}
+            if r['trang_thai'] == 'DA_CAP_PHAT':
+                trace['cap'] = {'thoi_gian': 'Đã giao', 'khoa': '', 'nhan_vien': ''}
+            items.append({'loai_goc': '', 'ten': r['ten'], 'so_luong': r['so_luong'], 'trace': trace})
         return items
-
+        
     def get_kpi_sterilized_drilldown(self, date_str):
         sql = """
-            SELECT ma_phien, ten_may, thoi_gian, nhan_vien, trang_thai, cycle_type, ket_qua, mau_sac_chi_thi, ly_do_huy, duong_dan_anh_online
-            FROM lich_su_van_hanh
-            WHERE DATE(thoi_gian) = %s
-            ORDER BY thoi_gian DESC
+            SELECT khoa_giao as khoa, ma_do as ten, so_luong, trang_thai, thoi_gian, ma_phieu 
+            FROM lich_su_giao_nhan 
+            WHERE DATE(thoi_gian) = %s AND trang_thai IN ('CHO_CAP_PHAT', 'DA_CAP_PHAT')
         """
-        sessions = self.fetch_all(sql, (date_str,)) or []
-        
-        # Tối ưu: Lấy trước toàn bộ giao nhận hôm nay
-        nhan_map = {}
-        sql_nhan1 = "SELECT bo_id as id_goc, 'BO' as loai_goc, thoi_gian, khoa, nguoi_nhan as nhan_vien FROM lich_su_giao_nhan WHERE DATE(thoi_gian) = %s AND bo_id IS NOT NULL"
-        sql_nhan2 = "SELECT dung_cu_id as id_goc, 'DONG_LE' as loai_goc, thoi_gian, khoa, nguoi_nhan as nhan_vien FROM lich_su_giao_nhan WHERE DATE(thoi_gian) = %s AND dung_cu_id IS NOT NULL"
-        sql_nhan3 = "SELECT dung_cu_id as id_goc, 'THU_THUAT' as loai_goc, gio_giao as thoi_gian, khoa, nguoi_nhan as nhan_vien FROM lich_su_giao_nhan_thu_thuat WHERE DATE(gio_giao) = %s"
-        
-        for c in (self.fetch_all(sql_nhan1, (date_str,)) or []):
-            key = (c['id_goc'], c['loai_goc'])
-            if key not in nhan_map: nhan_map[key] = []
-            nhan_map[key].append({"thoi_gian": c['thoi_gian'].strftime('%d/%m/%Y %H:%M:%S') if c['thoi_gian'] else "", "dt": c['thoi_gian'], "khoa": c['khoa'], "nhan_vien": c['nhan_vien']})
-        for c in (self.fetch_all(sql_nhan2, (date_str,)) or []):
-            key = (c['id_goc'], c['loai_goc'])
-            if key not in nhan_map: nhan_map[key] = []
-            nhan_map[key].append({"thoi_gian": c['thoi_gian'].strftime('%d/%m/%Y %H:%M:%S') if c['thoi_gian'] else "", "dt": c['thoi_gian'], "khoa": c['khoa'], "nhan_vien": c['nhan_vien']})
-        for c in (self.fetch_all(sql_nhan3, (date_str,)) or []):
-            key = (c['id_goc'], c['loai_goc'])
-            if key not in nhan_map: nhan_map[key] = []
-            nhan_map[key].append({"thoi_gian": c['thoi_gian'].strftime('%d/%m/%Y %H:%M:%S') if c['thoi_gian'] else "", "dt": c['thoi_gian'], "khoa": c['khoa'], "nhan_vien": c['nhan_vien']})
-            
-        for k in nhan_map: nhan_map[k].sort(key=lambda x: x['dt'])
-            
-        _, cap_map = self._get_bulk_trace(date_str)
-        
-        for s in sessions:
-            hap_dt = s['thoi_gian']
-            hap = {"thoi_gian": hap_dt.strftime('%d/%m/%Y %H:%M:%S') if hap_dt else "", "ten_may": s['ten_may'], "nhan_vien": s['nhan_vien']}
-            if s['thoi_gian']:
-                s['thoi_gian'] = s['thoi_gian'].strftime('%d/%m/%Y %H:%M:%S')
-            
-            sql_details = """
-                SELECT c.id_goc, c.loai_goc, c.ten_dung_cu as ten, c.so_luong, c.khoa
-                FROM chi_tiet_chu_trinh_van_hanh c
-                WHERE c.ma_phien_van_hanh = %s
-            """
-            details = self.fetch_all(sql_details, (s['ma_phien'],)) or []
-            for d in details:
-                lg = 'THU_THUAT' if 'THU_THUAT' in str(d['loai_goc']).upper() else ('BO' if 'BO' in str(d['loai_goc']).upper() or 'BỘ' in str(d['loai_goc']).upper() else 'DONG_LE')
-                key = (d['id_goc'], lg)
-                
-                # Find last nhan BEFORE or EQUAL to hap
-                nhan = None
-                for n in reversed(nhan_map.get(key, [])):
-                    if n['dt'] <= hap_dt:
-                        nhan = n
-                        break
-                        
-                # Find first cap AFTER or EQUAL to hap
-                cap = None
-                for c in cap_map.get(key, []):
-                    if c['dt'] >= hap_dt:
-                        cap = c
-                        break
-                        
-                d['trace'] = {"nhan": nhan, "hap": hap, "cap": cap}
-            s['details'] = details
-        return sessions
+        rows = self.fetch_all(sql, (date_str,))
+        items = []
+        for r in rows:
+            trace = {'nhan': {'thoi_gian': r['thoi_gian'].strftime('%H:%M %d/%m') if hasattr(r['thoi_gian'], 'strftime') else str(r['thoi_gian'])[:16], 'khoa': r['khoa'], 'nhan_vien': ''}}
+            if r['trang_thai'] in ['CHO_CAP_PHAT', 'DA_CAP_PHAT']:
+                trace['hap'] = {'thoi_gian': 'Hoàn thành', 'ten_may': 'N/A', 'nhan_vien': ''}
+            if r['trang_thai'] == 'DA_CAP_PHAT':
+                trace['cap'] = {'thoi_gian': 'Đã giao', 'khoa': '', 'nhan_vien': ''}
+            items.append({'loai_goc': '', 'ten': r['ten'], 'so_luong': r['so_luong'], 'trace': trace})
+        return items
 
     def get_kpi_clean_inventory_drilldown(self):
         sql = """
-            SELECT ct.loai_goc, ct.id_goc, ct.ten_dung_cu as ten, ct.khoa, 
-                   (SUM(ct.so_luong) - IFNULL(T_DIST.total_distributed, 0)) as so_luong
-            FROM chi_tiet_chu_trinh_van_hanh ct 
-            JOIN lich_su_van_hanh ls ON ct.ma_phien_van_hanh = ls.ma_phien
-            LEFT JOIN (
-                SELECT CASE WHEN bo_id IS NOT NULL THEN bo_id ELSE dung_cu_id END as id_goc,
-                       CASE WHEN bo_id IS NOT NULL THEN 'bo_dung_cu' ELSE 'do_dong_le' END as loai_goc,
-                       SUM(so_luong) as total_distributed 
-                FROM lich_su_cap_phat WHERE IFNULL(loai_phieu, 'CAP_PHAT') IN ('CAP_PHAT', 'RESET_SACH')
-                GROUP BY id_goc, loai_goc
-            ) T_DIST ON ct.id_goc = T_DIST.id_goc AND ct.loai_goc = T_DIST.loai_goc
-            WHERE ls.trang_thai = 'COMPLETED' 
-            GROUP BY ct.loai_goc, ct.id_goc, ct.ten_dung_cu, ct.khoa, T_DIST.total_distributed
-            HAVING so_luong > 0
+            SELECT khoa_giao as khoa, ma_do as ten, so_luong, trang_thai, thoi_gian, ma_phieu 
+            FROM lich_su_giao_nhan 
+            WHERE trang_thai = 'CHO_CAP_PHAT'
         """
-        bos = self.fetch_all(sql) or []
-        for item in bos:
-            item['trace'] = self.get_universal_traceability(item['id_goc'], item['loai_goc'])
-        return bos
+        rows = self.fetch_all(sql)
+        items = []
+        for r in rows:
+            trace = {'nhan': {'thoi_gian': r['thoi_gian'].strftime('%H:%M %d/%m') if hasattr(r['thoi_gian'], 'strftime') else str(r['thoi_gian'])[:16], 'khoa': r['khoa'], 'nhan_vien': ''}}
+            if r['trang_thai'] in ['CHO_CAP_PHAT', 'DA_CAP_PHAT']:
+                trace['hap'] = {'thoi_gian': 'Hoàn thành', 'ten_may': 'N/A', 'nhan_vien': ''}
+            if r['trang_thai'] == 'DA_CAP_PHAT':
+                trace['cap'] = {'thoi_gian': 'Đã giao', 'khoa': '', 'nhan_vien': ''}
+            items.append({'loai_goc': '', 'ten': r['ten'], 'so_luong': r['so_luong'], 'trace': trace})
+        return items
+
+
 
     # --- Settings / Links ---
     def get_links(self):

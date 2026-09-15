@@ -240,7 +240,8 @@ class ReceivePage(QWidget):
                             continue
                             
                         # Extract real time instead of 23:59:59
-                        time_part = "23:59:59"
+                        from datetime import datetime
+                        time_part = datetime.now().strftime("%H:%M:%S")
                         if ' ' in ts:
                             try:
                                 t_str = ts.split(' ', 1)[1].strip()

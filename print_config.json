@@ -1,0 +1,21 @@
+{
+    "width": 50,
+    "height": 30,
+    "qr_size": 18,
+    "qr_x": 2,
+    "qr_y": 5,
+    "text_x": 22,
+    "ma_y": 5,
+    "ma_size": 10,
+    "ten_y": 10,
+    "ten_size": 8,
+    "pptk_y": 15,
+    "pptk_size": 8,
+    "ntk_y": 20,
+    "ntk_size": 8,
+    "hsd_y": 25,
+    "hsd_size": 8,
+    "nv_y": 28,
+    "nv_size": 8,
+    "printer_name": "Pantum BP5100DW Series PCL6"
+}

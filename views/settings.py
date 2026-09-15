@@ -57,10 +57,7 @@ class SettingsPage(QWidget):
         self.setup_mapping_tab()
         self.tabs.addTab(self.tab_mapping, "Mapping Form -> Ma Do")
 
-        # Tab 3: Print Settings
-        self.tab_print = QWidget()
-        self.setup_print_tab()
-        self.tabs.addTab(self.tab_print, "Cài Đặt In Tem")
+
 
 
     # -------- LINKS TAB --------

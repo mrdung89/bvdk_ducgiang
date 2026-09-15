@@ -1,4 +1,7 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel
+import sys
+
+with open(r'C:\Users\Admin\Desktop\bvdkdg\bvdk_ducgiang\views\assembly.py', 'w', encoding='utf-8') as f:
+    f.write('''from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 import subprocess
@@ -14,7 +17,7 @@ class AssemblyPage(QWidget):
         header.setAlignment(Qt.AlignCenter)
         layout.addWidget(header)
         
-        desc = QLabel("Hệ thống In tem được quản lý bởi công cụ chuyên dụng.\nVui lòng bấm nút bên dưới để mở phần mềm thiết kế và in tem.")
+        desc = QLabel("Hệ thống In tem được quản lý bởi công cụ chuyên dụng.\\nVui lòng bấm nút bên dưới để mở phần mềm thiết kế và in tem.")
         desc.setFont(QFont("Arial", 14))
         desc.setAlignment(Qt.AlignCenter)
         layout.addWidget(desc)
@@ -31,3 +34,4 @@ class AssemblyPage(QWidget):
         # Mở màn hình In Tem bằng Tkinter dưới dạng subscreen
         script_path = os.path.join(os.path.dirname(__file__), "intem_bvdk_ducgiang.py")
         subprocess.Popen(["python", script_path, "--subscreen"])
+''')

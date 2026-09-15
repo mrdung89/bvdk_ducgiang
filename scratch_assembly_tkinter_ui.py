@@ -21,7 +21,7 @@ class AssemblyPage(QWidget):
         self.map_ma_phien = {}
         
         self.setup_ui()
-        backend.CURRENT_PRINTER_NAME = None\n        backend.CURRENT_USER_FULLNAME = 'NV KSNK'\n        self.refresh_session_cb()
+        self.refresh_session_cb()
         
     def setup_ui(self):
         layout = QVBoxLayout(self)

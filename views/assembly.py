@@ -1,8 +1,4 @@
-import sys
-import os
-
-with open(r'C:\Users\Admin\Desktop\bvdkdg\bvdk_ducgiang\views\assembly.py', 'w', encoding='utf-8') as f:
-    f.write('''from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, 
                                QComboBox, QRadioButton, QButtonGroup, QScrollArea, QFrame,
                                QGridLayout, QSpinBox, QMessageBox, QLineEdit)
 from PySide6.QtCore import Qt
@@ -21,7 +17,9 @@ class AssemblyPage(QWidget):
         self.map_ma_phien = {}
         
         self.setup_ui()
-        backend.CURRENT_PRINTER_NAME = None\n        backend.CURRENT_USER_FULLNAME = 'NV KSNK'\n        self.refresh_session_cb()
+        backend.CURRENT_PRINTER_NAME = None
+        backend.CURRENT_USER_FULLNAME = 'NV KSNK'
+        self.refresh_session_cb()
         
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -253,4 +251,3 @@ class AssemblyPage(QWidget):
                     self.do_print(i['id'], i['is_le'], i['ten'], i['khoa_ten'], i['han'], i['pp'], n)
                     c += n
         self.lbl_status.setText(f"Đã in xong {c} tem ({mode})")
-''')

@@ -47,6 +47,7 @@ class AssemblyPage(QWidget):
         fr_opt = QHBoxLayout()
         fr_opt.addWidget(QLabel("Hạn:"))
         self.cb_h = QComboBox()
+        self.cb_h.setEditable(True)
         self.cb_h.addItems(["", "7", "30", "90", "180"])
         fr_opt.addWidget(self.cb_h)
         
@@ -282,7 +283,8 @@ class AssemblyPage(QWidget):
     def do_print(self, item_id, is_le, t, k_ten, h_db, pp_db, n):
         if n <= 0: return
         today = datetime.today()
-        han_days = h_db if str(h_db).isdigit() else 30
+        user_h = self.cb_h.currentText().strip()
+        han_days = user_h if user_h.isdigit() else (h_db if str(h_db).isdigit() else 30)
         han = today + timedelta(days=int(han_days))
         
         pp = self.cb_p.currentText() if self.cb_p.currentText() else pp_db

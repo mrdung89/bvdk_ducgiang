@@ -159,7 +159,7 @@ class DBManager:
 
     def get_pending_dirty_items(self):
         self.setup_multi_client_tables()
-        return self.fetch_all("SELECT * FROM lich_su_giao_nhan WHERE trang_thai='CHO_TIEP_NHAN'")
+        return self.fetch_all("SELECT * FROM lich_su_giao_nhan WHERE trang_thai='CHO_TIEP_NHAN' ORDER BY thoi_gian DESC, id DESC")
 
     def receive_dirty_items(self, req_id, ma_do, sl):
         # Tiep nhan -> Update ton kho

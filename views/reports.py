@@ -71,6 +71,12 @@ class ReportsPage(QWidget):
     def do_trace(self):
         keyword = self.txt_search.text().strip()
         if not keyword: return
+        
+        # Bóc tách ID nếu chuỗi có dạng "ID:123, KHOA:..., LOAI:..."
+        if keyword.startswith("ID:"):
+            parts = keyword.split(",")
+            keyword = parts[0].replace("ID:", "").strip()
+            
         search_type = self.cb_search_type.currentText()
         
         self.table_trace.setRowCount(0)

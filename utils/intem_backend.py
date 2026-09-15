@@ -82,12 +82,10 @@ def tao_anh_tem(item_id, ten, khoa_id, ten_khoa, ngay_tk, han_tk, loai_dung_cu, 
         qr_content = str(item_id)
     elif type_code == 'LE':
         khoa_str = khoa_id if khoa_id else remove_vn_accents(str(ten_khoa)).strip()
-        qr_data = {'id': item_id, 'khoa': khoa_str, 'loai': 'LE'}
-        qr_content = json.dumps(qr_data, ensure_ascii=False)
+        qr_content = f"ID:{item_id}, KHOA:{khoa_str}, LOAI:LE"
     elif type_code == 'thu_thuat':
         khoa_str = khoa_id if khoa_id else remove_vn_accents(str(ten_khoa)).strip()
-        qr_data = {'id': item_id, 'khoa': khoa_str, 'loai': 'thu_thuat'}
-        qr_content = json.dumps(qr_data, ensure_ascii=False)
+        qr_content = f"ID:{item_id}, KHOA:{khoa_str}, LOAI:THU_THUAT"
     else:
         qr_content = str(item_id)
 

@@ -417,6 +417,18 @@ class DBManager:
         sql = "SELECT id, ten_bo, ma_qr FROM bo_dung_cu WHERE ten_bo LIKE %s OR ten_bo_chuan_hoa LIKE %s LIMIT 10"
         return self.fetch_all(sql, (f"%{keyword}%", f"%{kw_clean}%")) or []
 
+    def get_realtime_machines(self):
+        sql = """
+            SELECT 
+                name as ten_may, 
+                status as trang_thai, 
+                DATE_SUB(end_time, INTERVAL 60 MINUTE) as thoi_gian_bat_dau,
+                60 as thoi_gian_du_kien
+            FROM machines
+            ORDER BY group_id, name
+        """
+        return self.fetch_all(sql) or []
+        
     def get_traceability_timeline(self, keyword):
         """Truy vết dựa trên lich_su_giao_nhan"""
         id_val = int(keyword) if keyword.isdigit() else 0

@@ -147,8 +147,10 @@ class AssemblyPage(QWidget):
                 ma = r.get('ma_phieu', '')
                 khoa = r.get('khoa', '')
                 tg = r.get('thoi_gian', '')
-                tg_str = tg.strftime('%H:%M %d/%m') if hasattr(tg, 'strftime') else str(tg)
-                disp = f"{ma} - {khoa} - {tg_str}"
+                tg_str = tg.strftime('%H:%M - %d/%m') if hasattr(tg, 'strftime') else str(tg)
+                disp = f"{khoa} : {tg_str}"
+                if disp in self.map_ma_phien:
+                    disp = f"{khoa} : {tg_str} ({str(ma)[-4:]})"
                 self.map_ma_phien[disp] = ma
                 self.cb_ph_display.addItem(disp)
         except Exception as e:
@@ -191,18 +193,21 @@ class AssemblyPage(QWidget):
                 
                 is_digit = str(ma_do).isdigit()
                 try:
-                    res1 = self.db.fetch_one("SELECT phuong_phap_tiet_khuan, han_tiet_khuan FROM danh_muc_bo_dung_cu WHERE ma_bo=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
+                    res1 = self.db.fetch_one("SELECT ten_bo, phuong_phap_tiet_khuan, han_tiet_khuan FROM danh_muc_bo_dung_cu WHERE ma_bo=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
                     if res1:
+                        t = res1.get('ten_bo') or t
                         pp = res1.get('phuong_phap_tiet_khuan') or "STEAM"
                         h = res1.get('han_tiet_khuan') or 30
                     else:
-                        res2 = self.db.fetch_one("SELECT han_tiet_khuan FROM danh_muc_do_vai WHERE ma_do_vai=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
+                        res2 = self.db.fetch_one("SELECT ten_do_vai, han_tiet_khuan FROM danh_muc_do_vai WHERE ma_do_vai=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
                         if res2:
+                            t = res2.get('ten_do_vai') or t
                             h = res2.get('han_tiet_khuan') or 30
                             is_le = True
                         else:
-                            res3 = self.db.fetch_one("SELECT phuong_phap_tiet_khuan, han_tiet_khuan FROM danh_muc_dung_cu WHERE ma_dc=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
+                            res3 = self.db.fetch_one("SELECT ten_dc, phuong_phap_tiet_khuan, han_tiet_khuan FROM danh_muc_dung_cu WHERE ma_dc=%s" + (" OR id=%s" if is_digit else ""), ((ma_do, ma_do) if is_digit else (ma_do,)))
                             if res3:
+                                t = res3.get('ten_dc') or t
                                 pp = res3.get('phuong_phap_tiet_khuan') or "STEAM"
                                 h = res3.get('han_tiet_khuan') or 30
                                 is_le = True
@@ -223,17 +228,27 @@ class AssemblyPage(QWidget):
                 
                 btn = QPushButton("IN")
                 btn.setStyleSheet("background-color: #3498db; color: white; border: none; padding: 5px;")
-                btn.clicked.connect(lambda ch, i=id_item, l=is_le, ten=t, kt=k_ten, hn=h, pt=pp, sp=spin: self.do_print(i, l, ten, kt, hn, pt, sp.value()))
+                btn.clicked.connect(lambda ch, i=id_item, l=is_le, ten=t, kt=k_ten, hn=h, pt=pp, sp=spin, f=fr, b=btn: self.on_print_single(i, l, ten, kt, hn, pt, sp, f, b))
                 l.addWidget(btn)
                 
                 self.scroll_layout.addWidget(fr)
                 
                 self.list_items.append({
                     'id': id_item, 'is_le': is_le, 'ten': t,
-                    'khoa_ten': k_ten, 'han': h, 'pp': pp, 'spin': spin
+                    'khoa_ten': k_ten, 'han': h, 'pp': pp, 'spin': spin, 'frame': fr, 'btn': btn, 'printed': False
                 })
             except Exception as e:
                 print("Error rendering row:", e)
+
+    def on_print_single(self, i, l, ten, kt, hn, pt, sp, f, b):
+        success = self.do_print(i, l, ten, kt, hn, pt, sp.value())
+        if success:
+            f.setStyleSheet("background-color: #d4edda; border: 1px solid #c3e6cb;")
+            b.setStyleSheet("background-color: #27ae60; color: white; border: none; padding: 5px;")
+            b.setText("ĐÃ IN")
+            for item in self.list_items:
+                if item['id'] == i:
+                    item['printed'] = True
 
     def on_scan(self):
         qr = self.txt_search.text().strip()
@@ -284,7 +299,7 @@ class AssemblyPage(QWidget):
             print("Lỗi quét QR:", e)
 
     def do_print(self, item_id, is_le, t, k_ten, h_db, pp_db, n):
-        if n <= 0: return
+        if n <= 0: return False
         today = datetime.today()
         user_h = self.cb_h.currentText().strip()
         han_days = user_h if user_h.isdigit() else (h_db if str(h_db).isdigit() else 30)
@@ -303,12 +318,16 @@ class AssemblyPage(QWidget):
             self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai='DA_DONG_GOI' WHERE id=%s", (item_id,))
             
             self.lbl_status.setText(f"Đã in tem {t}")
+            return True
         except Exception as e:
             QMessageBox.warning(self, "Lỗi in", str(e))
+            return False
 
     def print_bulk(self, mode):
         c = 0
         for i in self.list_items:
+            if i.get('printed', False): continue
+            
             n = i['spin'].value()
             if n > 0:
                 should_print = False
@@ -318,8 +337,13 @@ class AssemblyPage(QWidget):
                 elif i['pp'] == mode: should_print = True
                 
                 if should_print:
-                    self.do_print(i['id'], i['is_le'], i['ten'], i['khoa_ten'], i['han'], i['pp'], n)
-                    c += n
+                    success = self.do_print(i['id'], i['is_le'], i['ten'], i['khoa_ten'], i['han'], i['pp'], n)
+                    if success:
+                        i['printed'] = True
+                        i['frame'].setStyleSheet("background-color: #d4edda; border: 1px solid #c3e6cb;")
+                        i['btn'].setStyleSheet("background-color: #27ae60; color: white; border: none; padding: 5px;")
+                        i['btn'].setText("ĐÃ IN")
+                        c += n
         self.lbl_status.setText(f"Đã in xong {c} tem ({mode})")
 
     def show_manual_print(self):

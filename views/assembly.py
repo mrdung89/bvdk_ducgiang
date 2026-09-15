@@ -13,7 +13,7 @@ class AssemblyPage(QWidget):
     def __init__(self, user_data=None):
         super().__init__()
         self.user_data = user_data or {}
-        self.user_fullname = self.user_data.get("ho_ten", "NV KSNK")
+        self.user_fullname = self.user_data.get("full_name", "NV KSNK")
         self.db = DBManager()
         self.list_items = []
         self.map_ma_phien = {}

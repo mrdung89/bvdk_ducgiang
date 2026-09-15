@@ -1,0 +1,212 @@
+{
+  "main.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "controllers\\dashboard_controller.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "controllers\\decontamination_controller.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 3,
+    "machine_updates": 2,
+    "has_poll": false
+  },
+  "controllers\\login_controller.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "controllers\\main_controller.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "controllers\\main_window_controller.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "controllers\\sterilization_controller.py": {
+    "sync_system_insert": true,
+    "sync_system_read": false,
+    "trang_thai_updates": 3,
+    "machine_updates": 4,
+    "has_poll": true
+  },
+  "models\\db_manager.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 7,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "models\\__init__.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "utils\\item_selector_dialog.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "utils\\multi_item_dialog.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "utils\\printer.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "utils\\quantity_widget.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "utils\\ui_helpers.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "utils\\vietnamese_filter.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\assembly.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\dashboard.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\dashboard_components.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\decontamination.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\distribution.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\inventory_extra.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\login.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\main_window.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\management.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 1,
+    "has_poll": false
+  },
+  "views\\master_data.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\reports.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\settings.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\sterilization.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\traceability_dialog.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  },
+  "views\\__init__.py": {
+    "sync_system_insert": false,
+    "sync_system_read": false,
+    "trang_thai_updates": 0,
+    "machine_updates": 0,
+    "has_poll": false
+  }
+}

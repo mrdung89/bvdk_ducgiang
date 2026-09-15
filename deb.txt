@@ -1,0 +1,13 @@
+<USER_REQUEST>
+chọn khoa cần có autocomplete với debounce 0,5s, xổ xuống dropdown, ko được ảnh hưởng đến ô nhập
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-14T09:42:25+07:00.
+</ADDITIONAL_METADATA>
+---
+<USER_REQUEST>
+vừa nãy tao đã nói phải để trống ô nhập ko tự điền, mày xem lại toàn bộ lịch sử chat trong ngày hôm nay và thực hiện 1 lần cho chính xác vào: autocomplete, deboun ???
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-14T12:41:28+07:00.
+</ADDITIONAL_METADATA>

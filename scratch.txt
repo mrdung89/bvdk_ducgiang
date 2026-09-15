@@ -1,0 +1,28 @@
+    def client_send_dirty(self):
+        dlg = MultiItemDialog(self, "Tạo Phiếu Giao Nhận (Nhiều Món)", list_type="do_vai")
+        if dlg.exec():
+            from datetime import datetime
+            now = datetime.now()
+            target_date = self.date_edit.date().toString("yyyy-MM-dd")
+            if target_date == now.strftime("%Y-%m-%d"):
+                target_time = now.strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                target_time = f"{target_date} {now.strftime('%H:%M:%S')}"
+                
+            target_khoa = self.khoa
+            trang_thai_phieu = 'CHO_TIEP_NHAN'
+            if self.role != "KHOA_LAM_SANG":
+                trang_thai_phieu = 'DANG_GIAT'
+                if hasattr(self, 'cb_ward_send_khoa'):
+                    target_khoa = self.cb_ward_send_khoa.currentText().strip()
+                    if not target_khoa:
+                        QMessageBox.warning(self, "Lỗi", "Vui lòng chọn hoặc nhập tên Khoa!")
+                        return
+                        
+            ma_phieu_str = f"PN_{target_khoa}_{now.strftime('%Y%m%d_%H%M%S')}"
+            
+            for ma, sl in dlg.items_to_submit:
+                self.db.send_dirty_items(target_khoa, ma, sl, thoi_gian=target_time, trang_thai=trang_thai_phieu, ma_phieu=ma_phieu_str)
+            QMessageBox.information(self, "Thành công", f"Đã gửi {len(dlg.items_to_submit)} món xuống KSNK!")
+            self.load_ward_send()
+

@@ -1,0 +1,1965 @@
+{
+  "main.py": {
+    "size": 615,
+    "methods": [
+      {
+        "line": 6,
+        "indent": 0,
+        "sig": "def main():"
+      }
+    ],
+    "preview": "import sys\nimport os\nfrom PySide6.QtWidgets import QApplication\nfrom controllers.main_controller import MainController\n\ndef main():\n    app = QApplication(sys.argv)\n    \n    font = app.font()\n    font.setPointSize(11)\n    app.setFont(font)\n    \n    qss_path = os.path.join(os.path.dirname(__file__), \"style.qss\")\n    if os.path.exists(qss_path):\n        with open(qss_path, \"r\", encoding=\"utf-8\") as f:\n            app.setStyleSheet(f.read())\n    else:\n        app.setStyle(\"Fusion\")\n    \n    control"
+  },
+  "controllers\\dashboard_controller.py": {
+    "size": 8259,
+    "methods": [
+      {
+        "line": 16,
+        "indent": 0,
+        "sig": "class DashboardController(QObject):"
+      },
+      {
+        "line": 22,
+        "indent": 4,
+        "sig": "def __init__(self, view):"
+      },
+      {
+        "line": 47,
+        "indent": 4,
+        "sig": "def load_data(self):"
+      },
+      {
+        "line": 55,
+        "indent": 4,
+        "sig": "def _fetch_data_worker(self, date_str, tu_ngay, den_ngay):"
+      },
+      {
+        "line": 72,
+        "indent": 4,
+        "sig": "def _create_chart(self, chart_data):"
+      },
+      {
+        "line": 87,
+        "indent": 4,
+        "sig": "def on_kpi_updated(self, kpi):"
+      },
+      {
+        "line": 93,
+        "indent": 4,
+        "sig": "def on_machines_updated(self, machines):"
+      },
+      {
+        "line": 112,
+        "indent": 4,
+        "sig": "def on_chart_updated(self, fig):"
+      },
+      {
+        "line": 124,
+        "indent": 4,
+        "sig": "def show_drilldown_nhan(self):"
+      },
+      {
+        "line": 133,
+        "indent": 4,
+        "sig": "def show_drilldown_chay(self):"
+      },
+      {
+        "line": 151,
+        "indent": 4,
+        "sig": "def show_drilldown_kho(self):"
+      },
+      {
+        "line": 159,
+        "indent": 4,
+        "sig": "def search_traceability(self):"
+      },
+      {
+        "line": 187,
+        "indent": 8,
+        "sig": "def remove_accents(input_str):"
+      }
+    ],
+    "preview": "import threading\nfrom PySide6.QtCore import QObject, Signal, QDate, QTimer\nfrom PySide6.QtWidgets import QMessageBox\nimport pandas as pd\nimport seaborn as sns\nimport matplotlib\nimport matplotlib.pyplot as plt\nfrom matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas\nimport warnings\nwarnings.filterwarnings(\"ignore\")\n\nfrom models.db_manager import DBManager\nfrom views.dashboard_components import DashboardMachineCard\nfrom views.traceability_dialog import TraceabilityDialog\n\nc"
+  },
+  "controllers\\decontamination_controller.py": {
+    "size": 31772,
+    "methods": [
+      {
+        "line": 10,
+        "indent": 0,
+        "sig": "class SelectionPopup(QDialog):"
+      },
+      {
+        "line": 11,
+        "indent": 4,
+        "sig": "def __init__(self, parent, items):"
+      },
+      {
+        "line": 85,
+        "indent": 4,
+        "sig": "def populate_list(self):"
+      },
+      {
+        "line": 100,
+        "indent": 4,
+        "sig": "def filter_list(self, text):"
+      },
+      {
+        "line": 108,
+        "indent": 4,
+        "sig": "def on_item_select(self, item):"
+      },
+      {
+        "line": 133,
+        "indent": 4,
+        "sig": "def select_all(self):"
+      },
+      {
+        "line": 153,
+        "indent": 4,
+        "sig": "def remove_selected(self):"
+      },
+      {
+        "line": 165,
+        "indent": 4,
+        "sig": "def update_table(self):"
+      },
+      {
+        "line": 182,
+        "indent": 4,
+        "sig": "def get_selected(self):"
+      },
+      {
+        "line": 185,
+        "indent": 0,
+        "sig": "class DecontaminationController(QObject):"
+      },
+      {
+        "line": 186,
+        "indent": 4,
+        "sig": "def __init__(self, view, user_data):"
+      },
+      {
+        "line": 217,
+        "indent": 4,
+        "sig": "def load_employees(self):"
+      },
+      {
+        "line": 236,
+        "indent": 4,
+        "sig": "def refresh_wash_machines_table(self):"
+      },
+      {
+        "line": 294,
+        "indent": 4,
+        "sig": "def _tick_wash_countdown(self):"
+      },
+      {
+        "line": 318,
+        "indent": 4,
+        "sig": "def load_sessions(self):"
+      },
+      {
+        "line": 348,
+        "indent": 4,
+        "sig": "def open_selection_popup(self):"
+      },
+      {
+        "line": 407,
+        "indent": 4,
+        "sig": "def add_to_cart(self, item_data):"
+      },
+      {
+        "line": 425,
+        "indent": 4,
+        "sig": "def process_washing(self, status):"
+      },
+      {
+        "line": 480,
+        "indent": 4,
+        "sig": "def open_washing_machine_dialog(self):"
+      },
+      {
+        "line": 526,
+        "indent": 4,
+        "sig": "def start_washing_machine(self, mac, cycle):"
+      },
+      {
+        "line": 624,
+        "indent": 4,
+        "sig": "def _tick_wash_timer(self):"
+      },
+      {
+        "line": 633,
+        "indent": 4,
+        "sig": "def complete_washing_machine(self, mac_id, mac_name):"
+      },
+      {
+        "line": 693,
+        "indent": 4,
+        "sig": "def force_complete_wash(self, mac_id):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QListWidget, QTableWidget, QTableWidgetItem, QPushButton, QLineEdit, QHeaderView, QMessageBox, QInputDialog, QCheckBox, QSpinBox, QTreeWidgetItem, QScrollArea, QWidget\nfrom PySide6.QtCore import Qt, QObject, QTimer\nfrom models.db_manager import DBManager\nfrom datetime import datetime, timedelta\nimport json\n\n\nfrom PySide6.QtCore import Qt\n\nclass SelectionPopup(QDialog):\n    def __init__(self, parent, items):\n        super"
+  },
+  "controllers\\login_controller.py": {
+    "size": 1334,
+    "methods": [
+      {
+        "line": 3,
+        "indent": 0,
+        "sig": "class LoginController:"
+      },
+      {
+        "line": 4,
+        "indent": 4,
+        "sig": "def __init__(self, view):"
+      },
+      {
+        "line": 13,
+        "indent": 4,
+        "sig": "def do_login(self):"
+      },
+      {
+        "line": 32,
+        "indent": 4,
+        "sig": "def show_register(self):"
+      }
+    ],
+    "preview": "from models.db_manager import DBManager\n\nclass LoginController:\n    def __init__(self, view):\n        self.view = view\n        self.db = DBManager()\n        \n        # Connect view signals to controller slots\n        self.view.btn_login.clicked.connect(self.do_login)\n        self.view.txt_pass.returnPressed.connect(self.do_login)\n        self.view.register_requested.connect(self.show_register)\n\n    def do_login(self):\n        user = self.view.txt_user.text().strip()\n        pwd = self.view.txt_p"
+  },
+  "controllers\\main_controller.py": {
+    "size": 1176,
+    "methods": [
+      {
+        "line": 9,
+        "indent": 0,
+        "sig": "class MainController:"
+      },
+      {
+        "line": 10,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 18,
+        "indent": 4,
+        "sig": "def start(self):"
+      },
+      {
+        "line": 21,
+        "indent": 4,
+        "sig": "def on_login_success(self, user_data):"
+      },
+      {
+        "line": 30,
+        "indent": 4,
+        "sig": "def on_logout(self):"
+      }
+    ],
+    "preview": "import sys\nfrom PySide6.QtWidgets import QApplication\n\nfrom views.login import LoginWindow\nfrom controllers.login_controller import LoginController\nfrom views.main_window import MainWindow\nfrom controllers.main_window_controller import MainWindowController\n\nclass MainController:\n    def __init__(self):\n        self.login_view = LoginWindow()\n        self.login_controller = LoginController(self.login_view)\n        self.main_window = None\n        self.main_window_controller = None\n        \n       "
+  },
+  "controllers\\main_window_controller.py": {
+    "size": 7177,
+    "methods": [
+      {
+        "line": 17,
+        "indent": 0,
+        "sig": "class MainWindowController(QObject):"
+      },
+      {
+        "line": 18,
+        "indent": 4,
+        "sig": "def __init__(self, view, user_data):"
+      },
+      {
+        "line": 36,
+        "indent": 4,
+        "sig": "def init_pages(self):"
+      },
+      {
+        "line": 98,
+        "indent": 4,
+        "sig": "def connect_signals(self):"
+      },
+      {
+        "line": 130,
+        "indent": 4,
+        "sig": "def set_default_page(self):"
+      },
+      {
+        "line": 137,
+        "indent": 4,
+        "sig": "def show_placeholder(self, title):"
+      }
+    ],
+    "preview": "from PySide6.QtCore import QObject\nfrom PySide6.QtWidgets import QMessageBox\n\nfrom views.dashboard import DashboardPage\nfrom controllers.dashboard_controller import DashboardController\nfrom views.decontamination import DecontaminationPage\nfrom controllers.decontamination_controller import DecontaminationController\nfrom views.assembly import AssemblyPage\nfrom views.sterilization import SterilizationPage\nfrom views.distribution import ReceivePage, IssuePage\nfrom views.reports import ReportsPage\nfr"
+  },
+  "controllers\\sterilization_controller.py": {
+    "size": 12226,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class SterilizationController(QObject):"
+      },
+      {
+        "line": 8,
+        "indent": 4,
+        "sig": "def __init__(self, view, user_data):"
+      },
+      {
+        "line": 33,
+        "indent": 4,
+        "sig": "def get_pending_sessions(self):"
+      },
+      {
+        "line": 46,
+        "indent": 4,
+        "sig": "def get_session_items(self, khoa, ma_phieu):"
+      },
+      {
+        "line": 84,
+        "indent": 4,
+        "sig": "def poll_db(self):"
+      },
+      {
+        "line": 93,
+        "indent": 4,
+        "sig": "def load_history(self):"
+      },
+      {
+        "line": 101,
+        "indent": 4,
+        "sig": "def cancel_machine(self, mac):"
+      },
+      {
+        "line": 122,
+        "indent": 4,
+        "sig": "def start_machine(self, mac):"
+      },
+      {
+        "line": 155,
+        "indent": 4,
+        "sig": "def end_machine(self, mac, result_status, test_note=\"\"):"
+      },
+      {
+        "line": 196,
+        "indent": 4,
+        "sig": "def load_items_into_machine(self, mac, items_list):"
+      }
+    ],
+    "preview": "from PySide6.QtCore import QObject, QTimer, Signal\nfrom PySide6.QtWidgets import QMessageBox, QInputDialog\nfrom datetime import datetime, timedelta\nimport json\nfrom models.db_manager import DBManager\n\nclass SterilizationController(QObject):\n    def __init__(self, view, user_data):\n        super().__init__()\n        self.view = view\n        self.user_data = user_data\n        self.db = DBManager()\n        \n        self.machines = []\n        \n        # Connect View Signals\n        self.view.signal_"
+  },
+  "models\\db_manager.py": {
+    "size": 42465,
+    "methods": [
+      {
+        "line": 4,
+        "indent": 0,
+        "sig": "class DBManager:"
+      },
+      {
+        "line": 5,
+        "indent": 4,
+        "sig": "def __init__(self, host=\"127.0.0.1\", user=\"root\", password=\"\", database=\"bvdk_ducgiang\"):"
+      },
+      {
+        "line": 13,
+        "indent": 4,
+        "sig": "def connect(self):"
+      },
+      {
+        "line": 24,
+        "indent": 4,
+        "sig": "def close(self):"
+      },
+      {
+        "line": 28,
+        "indent": 4,
+        "sig": "def fetch_all(self, query, params=None):"
+      },
+      {
+        "line": 36,
+        "indent": 4,
+        "sig": "def fetch_one(self, query, params=None):"
+      },
+      {
+        "line": 44,
+        "indent": 4,
+        "sig": "def execute(self, query, params=None):"
+      },
+      {
+        "line": 55,
+        "indent": 4,
+        "sig": "def execute_rowcount(self, query, params=None):"
+      },
+      {
+        "line": 69,
+        "indent": 4,
+        "sig": "def authenticate(self, username, password):"
+      },
+      {
+        "line": 72,
+        "indent": 4,
+        "sig": "def register_user(self, username, password, full_name, khoa_id, is_ksnk=False):"
+      },
+      {
+        "line": 77,
+        "indent": 4,
+        "sig": "def get_danh_muc_khoa(self):"
+      },
+      {
+        "line": 80,
+        "indent": 4,
+        "sig": "def get_chi_tiet_bo(self, ma_bo):"
+      },
+      {
+        "line": 85,
+        "indent": 4,
+        "sig": "def setup_tracking_table(self):"
+      },
+      {
+        "line": 98,
+        "indent": 4,
+        "sig": "def track_set_status(self, ma_bo, ten_bo, khoa_gui, trang_thai):"
+      },
+      {
+        "line": 107,
+        "indent": 4,
+        "sig": "def get_tracked_sets(self):"
+      },
+      {
+        "line": 110,
+        "indent": 4,
+        "sig": "def setup_extended_tables(self):"
+      },
+      {
+        "line": 125,
+        "indent": 4,
+        "sig": "def request_linh_bu(self, khoa, ma_dv, sl):"
+      },
+      {
+        "line": 128,
+        "indent": 4,
+        "sig": "def get_linh_bu(self):"
+      },
+      {
+        "line": 132,
+        "indent": 4,
+        "sig": "def approve_linh_bu(self, req_id, ma_dv, sl):"
+      },
+      {
+        "line": 136,
+        "indent": 4,
+        "sig": "def thanh_ly_do_vai(self, ma_dv, sl):"
+      },
+      {
+        "line": 139,
+        "indent": 4,
+        "sig": "def get_report_data(self):"
+      },
+      {
+        "line": 144,
+        "indent": 4,
+        "sig": "def setup_multi_client_tables(self):"
+      },
+      {
+        "line": 154,
+        "indent": 4,
+        "sig": "def send_dirty_items(self, khoa, ma_do, sl, thoi_gian=None, trang_thai='CHO_TIEP_NHAN', ma_phieu=None):"
+      },
+      {
+        "line": 160,
+        "indent": 4,
+        "sig": "def get_pending_dirty_items(self):"
+      },
+      {
+        "line": 164,
+        "indent": 4,
+        "sig": "def receive_dirty_items(self, req_id, ma_do, sl):"
+      },
+      {
+        "line": 170,
+        "indent": 4,
+        "sig": "def distribute_clean_items(self, req_id, ma_do, sl):"
+      },
+      {
+        "line": 175,
+        "indent": 4,
+        "sig": "def setup_dovai_advanced(self):"
+      },
+      {
+        "line": 182,
+        "indent": 4,
+        "sig": "def nhap_kho_mua(self, ma_do_vai, sl):"
+      },
+      {
+        "line": 186,
+        "indent": 4,
+        "sig": "def xuat_kho_mua_sang_lh(self, ma_do_vai, sl):"
+      },
+      {
+        "line": 191,
+        "indent": 4,
+        "sig": "def chuyen_loai_do_vai(self, ma_cu, ma_moi, sl):"
+      },
+      {
+        "line": 196,
+        "indent": 4,
+        "sig": "def reject_dirty_items(self, req_id, reason):"
+      },
+      {
+        "line": 201,
+        "indent": 4,
+        "sig": "def receive_dirty_items_only(self, req_id):"
+      },
+      {
+        "line": 205,
+        "indent": 4,
+        "sig": "def get_laundry_items(self):"
+      },
+      {
+        "line": 208,
+        "indent": 4,
+        "sig": "def complete_laundry(self, req_id, ma_do, sl):"
+      },
+      {
+        "line": 214,
+        "indent": 4,
+        "sig": "def phat_do_benh_nhan(self, khoa, ma_bn, ma_do, sl):"
+      },
+      {
+        "line": 221,
+        "indent": 4,
+        "sig": "def get_phieu_cap_phat(self):"
+      },
+      {
+        "line": 227,
+        "indent": 4,
+        "sig": "def tao_phieu_cap_phat(self, khoa, ma_do, sl, thoi_gian=None):"
+      },
+      {
+        "line": 237,
+        "indent": 4,
+        "sig": "def get_linh_bu(self):"
+      },
+      {
+        "line": 243,
+        "indent": 4,
+        "sig": "def request_linh_bu(self, khoa, ma_dv, sl):"
+      },
+      {
+        "line": 246,
+        "indent": 4,
+        "sig": "def approve_linh_bu(self, req_id, ma_dv, sl):"
+      },
+      {
+        "line": 251,
+        "indent": 4,
+        "sig": "def get_tu_truc_khoa(self, khoa):"
+      },
+      {
+        "line": 261,
+        "indent": 4,
+        "sig": "def get_phieu_gui_cua_khoa(self, khoa):"
+      },
+      {
+        "line": 264,
+        "indent": 4,
+        "sig": "def receive_dirty_items_only_advanced(self, req_id, ma_phieu=None):"
+      },
+      {
+        "line": 314,
+        "indent": 4,
+        "sig": "def get_dashboard_ksnk(self):"
+      },
+      {
+        "line": 330,
+        "indent": 4,
+        "sig": "def get_dashboard_khoa(self, khoa_name):"
+      },
+      {
+        "line": 346,
+        "indent": 4,
+        "sig": "def edit_phieu_cap_phat(self, phieu_id, new_sl):"
+      },
+      {
+        "line": 366,
+        "indent": 4,
+        "sig": "def edit_phieu_gui_do_do(self, phieu_id, new_sl):"
+      },
+      {
+        "line": 376,
+        "indent": 4,
+        "sig": "def get_kpi_summary_v2(self, date_str):"
+      },
+      {
+        "line": 441,
+        "indent": 4,
+        "sig": "def get_bo_suggestions(self, keyword):"
+      },
+      {
+        "line": 444,
+        "indent": 8,
+        "sig": "def remove_accents(input_str):"
+      },
+      {
+        "line": 452,
+        "indent": 4,
+        "sig": "def get_traceability_timeline(self, keyword):"
+      },
+      {
+        "line": 455,
+        "indent": 8,
+        "sig": "def remove_accents(input_str):"
+      },
+      {
+        "line": 518,
+        "indent": 4,
+        "sig": "def get_machine_batch_stats(self, date_str):"
+      },
+      {
+        "line": 527,
+        "indent": 4,
+        "sig": "def get_receiving_breakdown(self, date_str):"
+      },
+      {
+        "line": 537,
+        "indent": 4,
+        "sig": "def get_distribution_balance(self, date_str):"
+      },
+      {
+        "line": 569,
+        "indent": 4,
+        "sig": "def get_chart_data_7days(self, start_str, end_str):"
+      },
+      {
+        "line": 577,
+        "indent": 4,
+        "sig": "def get_realtime_machines(self):"
+      },
+      {
+        "line": 582,
+        "indent": 4,
+        "sig": "def get_universal_traceability(self, id_goc, loai_goc):"
+      },
+      {
+        "line": 628,
+        "indent": 4,
+        "sig": "def _get_bulk_trace(self, date_str):"
+      },
+      {
+        "line": 669,
+        "indent": 4,
+        "sig": "def get_kpi_received_drilldown(self, date_str):"
+      },
+      {
+        "line": 734,
+        "indent": 4,
+        "sig": "def get_kpi_sterilized_drilldown(self, date_str):"
+      },
+      {
+        "line": 800,
+        "indent": 4,
+        "sig": "def get_kpi_clean_inventory_drilldown(self):"
+      },
+      {
+        "line": 823,
+        "indent": 4,
+        "sig": "def get_links(self):"
+      },
+      {
+        "line": 827,
+        "indent": 4,
+        "sig": "def add_link(self, ten, url, loai):"
+      },
+      {
+        "line": 831,
+        "indent": 4,
+        "sig": "def update_link(self, link_id, ten, url, loai):"
+      },
+      {
+        "line": 834,
+        "indent": 4,
+        "sig": "def delete_link(self, link_id):"
+      }
+    ],
+    "preview": "import pymysql\nimport logging\n\nclass DBManager:\n    def __init__(self, host=\"127.0.0.1\", user=\"root\", password=\"\", database=\"bvdk_ducgiang\"):\n        self.host = host\n        self.user = user\n        self.password = password\n        self.database = database\n        self.connection = None\n        self.setup_tracking_table()\n\n    def connect(self):\n        try:\n            self.connection = pymysql.connect(\n                host=self.host, user=self.user, password=self.password,\n                dat"
+  },
+  "models\\__init__.py": {
+    "size": 0,
+    "methods": [],
+    "preview": ""
+  },
+  "utils\\item_selector_dialog.py": {
+    "size": 6218,
+    "methods": [
+      {
+        "line": 9,
+        "indent": 0,
+        "sig": "class ItemSelectorDialog(QDialog):"
+      },
+      {
+        "line": 10,
+        "indent": 4,
+        "sig": "def __init__(self, parent=None, existing_ma=None, add_callback=None):"
+      },
+      {
+        "line": 67,
+        "indent": 4,
+        "sig": "def fetch_all_items(self):"
+      },
+      {
+        "line": 80,
+        "indent": 4,
+        "sig": "def load_data(self):"
+      },
+      {
+        "line": 124,
+        "indent": 4,
+        "sig": "def on_double_click(self, row, col):"
+      },
+      {
+        "line": 141,
+        "indent": 4,
+        "sig": "def get_selected_items(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QComboBox, \n                               QLineEdit, QTableWidget, QTableWidgetItem, \n                               QCheckBox, QSpinBox, QPushButton, QWidget, QHeaderView, QAbstractItemView)\nfrom PySide6.QtCore import Qt\nfrom models.db_manager import DBManager\nfrom utils.quantity_widget import QuantityWidget\nfrom utils.vietnamese_filter import remove_vietnamese_accents\n\nclass ItemSelectorDialog(QDialog):\n    def __init__(self, p"
+  },
+  "utils\\multi_item_dialog.py": {
+    "size": 8119,
+    "methods": [
+      {
+        "line": 9,
+        "indent": 0,
+        "sig": "def remove_accents(input_str):"
+      },
+      {
+        "line": 13,
+        "indent": 0,
+        "sig": "class MultiItemDialog(QDialog):"
+      },
+      {
+        "line": 14,
+        "indent": 4,
+        "sig": "def __init__(self, parent, title, list_type=\"all\", target_khoa=None):"
+      },
+      {
+        "line": 91,
+        "indent": 4,
+        "sig": "def load_all_data(self):"
+      },
+      {
+        "line": 108,
+        "indent": 4,
+        "sig": "def change_filter(self, f_type):"
+      },
+      {
+        "line": 118,
+        "indent": 4,
+        "sig": "def filter_table(self):"
+      },
+      {
+        "line": 121,
+        "indent": 4,
+        "sig": "def populate_left_table(self):"
+      },
+      {
+        "line": 144,
+        "indent": 4,
+        "sig": "def on_item_double_clicked(self, item):"
+      },
+      {
+        "line": 151,
+        "indent": 4,
+        "sig": "def add_to_cart(self, typ, code, name):"
+      },
+      {
+        "line": 182,
+        "indent": 4,
+        "sig": "def submit_all(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton, \n                               QLabel, QTableWidget, QTableWidgetItem, QHeaderView, \n                               QMessageBox, QSpinBox, QLineEdit, QWidget, QSplitter)\nfrom PySide6.QtCore import Qt, QSortFilterProxyModel\nfrom PySide6.QtGui import QStandardItemModel, QStandardItem\nfrom models.db_manager import DBManager\nimport unicodedata\n\ndef remove_accents(input_str):\n    nfkd_form = unicodedata.normalize('NFKD', "
+  },
+  "utils\\printer.py": {
+    "size": 4877,
+    "methods": [
+      {
+        "line": 8,
+        "indent": 0,
+        "sig": "def print_assembly_label(parent_widget, ma_bo, ten_bo, nguoi_dong_goi=\"\"):"
+      },
+      {
+        "line": 57,
+        "indent": 0,
+        "sig": "def print_handover_receipt(parent_widget, ma_phien, khoa_giao, khoa_nhan, items, nguoi_lap_phieu=\"\"):"
+      }
+    ],
+    "preview": "from PySide6.QtPrintSupport import QPrinter, QPrintDialog\nfrom PySide6.QtGui import QPainter, QImage, QFont, QPixmap, QTextDocument\nfrom PySide6.QtCore import Qt\nimport qrcode\nfrom datetime import datetime\nimport io\n\ndef print_assembly_label(parent_widget, ma_bo, ten_bo, nguoi_dong_goi=\"\"):\n    \"\"\"In tem mAc v!ch/QR cho bA' dM-ng cM- cA\"ng cA!c thA#ng tin c?? bA#n.\"\"\"\n    # Generate QR Code image\n    qr = qrcode.QRCode(version=1, box_size=10, border=1)\n    qr.add_data(ma_bo)\n    qr.make(fit=True"
+  },
+  "utils\\quantity_widget.py": {
+    "size": 1684,
+    "methods": [
+      {
+        "line": 4,
+        "indent": 0,
+        "sig": "class QuantityWidget(QWidget):"
+      },
+      {
+        "line": 5,
+        "indent": 4,
+        "sig": "def __init__(self, parent=None, initial_value=1):"
+      },
+      {
+        "line": 30,
+        "indent": 4,
+        "sig": "def value(self):"
+      },
+      {
+        "line": 36,
+        "indent": 4,
+        "sig": "def set_value(self, val):"
+      },
+      {
+        "line": 39,
+        "indent": 4,
+        "sig": "def decrease(self):"
+      },
+      {
+        "line": 44,
+        "indent": 4,
+        "sig": "def increase(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QLineEdit\nfrom PySide6.QtCore import Qt\n\nclass QuantityWidget(QWidget):\n    def __init__(self, parent=None, initial_value=1):\n        super().__init__(parent)\n        layout = QHBoxLayout(self)\n        layout.setContentsMargins(2, 2, 2, 2)\n        layout.setSpacing(5)\n        \n        self.btn_minus = QPushButton(\"-\")\n        self.btn_minus.setFixedSize(35, 35)\n        self.btn_minus.setStyleSheet(\"background-color: #e74c3c; color:"
+  },
+  "utils\\ui_helpers.py": {
+    "size": 5705,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class DebounceAutocompleteDialog(QDialog):"
+      },
+      {
+        "line": 8,
+        "indent": 4,
+        "sig": "def __init__(self, parent, title, label_text, items):"
+      },
+      {
+        "line": 57,
+        "indent": 4,
+        "sig": "def on_text_edited(self, text):"
+      },
+      {
+        "line": 61,
+        "indent": 4,
+        "sig": "def apply_filter(self):"
+      },
+      {
+        "line": 70,
+        "indent": 4,
+        "sig": "def accept_selection(self):"
+      },
+      {
+        "line": 76,
+        "indent": 0,
+        "sig": "class DebounceComboBox(QComboBox):"
+      },
+      {
+        "line": 79,
+        "indent": 4,
+        "sig": "def __init__(self, parent=None):"
+      },
+      {
+        "line": 103,
+        "indent": 4,
+        "sig": "def addItems(self, texts):"
+      },
+      {
+        "line": 107,
+        "indent": 4,
+        "sig": "def addItem(self, text):"
+      },
+      {
+        "line": 110,
+        "indent": 4,
+        "sig": "def clear(self):"
+      },
+      {
+        "line": 113,
+        "indent": 4,
+        "sig": "def on_text_edited(self, text):"
+      },
+      {
+        "line": 117,
+        "indent": 4,
+        "sig": "def apply_filter(self):"
+      },
+      {
+        "line": 133,
+        "indent": 4,
+        "sig": "def on_return_pressed(self):"
+      },
+      {
+        "line": 142,
+        "indent": 4,
+        "sig": "def on_activated(self, index):"
+      },
+      {
+        "line": 145,
+        "indent": 0,
+        "sig": "def get_autocomplete_input(parent, title, label, query_type):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton\nfrom PySide6.QtCore import Qt, QTimer, QSortFilterProxyModel\nfrom PySide6.QtGui import QStandardItemModel, QStandardItem\nfrom models.db_manager import DBManager\nfrom utils.vietnamese_filter import VietnameseSortFilterProxyModel\n\nclass DebounceAutocompleteDialog(QDialog):\n    def __init__(self, parent, title, label_text, items):\n        super().__init__(parent)\n        self.setWindowTitle(title)\n      "
+  },
+  "utils\\vietnamese_filter.py": {
+    "size": 1053,
+    "methods": [
+      {
+        "line": 4,
+        "indent": 0,
+        "sig": "def remove_vietnamese_accents(s):"
+      },
+      {
+        "line": 14,
+        "indent": 0,
+        "sig": "class VietnameseSortFilterProxyModel(QSortFilterProxyModel):"
+      },
+      {
+        "line": 15,
+        "indent": 4,
+        "sig": "def filterAcceptsRow(self, source_row, source_parent):"
+      }
+    ],
+    "preview": "import unicodedata\nfrom PySide6.QtCore import QSortFilterProxyModel, Qt\n\ndef remove_vietnamese_accents(s):\n    if not s:\n        return \"\"\n    s = str(s)\n    # Convert 'đ' and 'Đ'\n    s = s.replace('đ', 'd').replace('Đ', 'D')\n    # Remove accents using NFKD\n    s = unicodedata.normalize('NFKD', s).encode('ASCII', 'ignore').decode('utf-8')\n    return s.lower()\n\nclass VietnameseSortFilterProxyModel(QSortFilterProxyModel):\n    def filterAcceptsRow(self, source_row, source_parent):\n        model = s"
+  },
+  "views\\assembly.py": {
+    "size": 3335,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class AssemblyPage(QWidget):"
+      },
+      {
+        "line": 8,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 40,
+        "indent": 4,
+        "sig": "def load_checklist(self):"
+      },
+      {
+        "line": 63,
+        "indent": 4,
+        "sig": "def do_pack(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox\nfrom PySide6.QtCore import Qt\nfrom PySide6.QtGui import QFont\nfrom models.db_manager import DBManager\nfrom utils.printer import print_assembly_label\n\nclass AssemblyPage(QWidget):\n    def __init__(self):\n        super().__init__()\n        self.db = DBManager()\n        self.current_ma_bo = \"\"\n        self.current_ten_bo = \"\"\n        layout = QVBo"
+  },
+  "views\\dashboard.py": {
+    "size": 4610,
+    "methods": [
+      {
+        "line": 9,
+        "indent": 0,
+        "sig": "class FlowLayout(QHBoxLayout):"
+      },
+      {
+        "line": 10,
+        "indent": 4,
+        "sig": "def __init__(self, parent=None):"
+      },
+      {
+        "line": 14,
+        "indent": 0,
+        "sig": "class DashboardPage(QWidget):"
+      },
+      {
+        "line": 15,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 19,
+        "indent": 4,
+        "sig": "def setup_ui(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,\n                               QLabel, QLineEdit, QPushButton, QDateEdit, \n                               QScrollArea, QFrame)\nfrom PySide6.QtCore import Qt, QDate\nfrom PySide6.QtGui import QFont\nimport qtawesome as qta\nfrom views.dashboard_components import KPICard, DashboardMachineCard\n\nclass FlowLayout(QHBoxLayout):\n    def __init__(self, parent=None):\n        super().__init__(parent)\n        self.setAlignment(Qt.A"
+  },
+  "views\\dashboard_components.py": {
+    "size": 6077,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class KPICard(QFrame):"
+      },
+      {
+        "line": 10,
+        "indent": 4,
+        "sig": "def __init__(self, title, subtitle, color, parent=None):"
+      },
+      {
+        "line": 38,
+        "indent": 4,
+        "sig": "def set_value(self, value):"
+      },
+      {
+        "line": 41,
+        "indent": 4,
+        "sig": "def mousePressEvent(self, event):"
+      },
+      {
+        "line": 46,
+        "indent": 4,
+        "sig": "def lighten_color(self, hex_color):"
+      },
+      {
+        "line": 50,
+        "indent": 0,
+        "sig": "class DashboardMachineCard(QFrame):"
+      },
+      {
+        "line": 53,
+        "indent": 4,
+        "sig": "def __init__(self, machine_data, parent=None):"
+      },
+      {
+        "line": 102,
+        "indent": 4,
+        "sig": "def update_colors(self):"
+      },
+      {
+        "line": 126,
+        "indent": 4,
+        "sig": "def update_timer(self):"
+      },
+      {
+        "line": 160,
+        "indent": 4,
+        "sig": "def mousePressEvent(self, event):"
+      }
+    ],
+    "preview": "import math\nfrom datetime import datetime\nfrom PySide6.QtWidgets import QFrame, QVBoxLayout, QLabel, QHBoxLayout, QWidget\nfrom PySide6.QtCore import Qt, Signal, QTimer\nfrom PySide6.QtGui import QFont, QColor, QPalette, QCursor\n\nclass KPICard(QFrame):\n    clicked = Signal()\n\n    def __init__(self, title, subtitle, color, parent=None):\n        super().__init__(parent)\n        self.setFrameShape(QFrame.StyledPanel)\n        self.setCursor(QCursor(Qt.PointingHandCursor))\n        self.setStyleSheet(f\""
+  },
+  "views\\decontamination.py": {
+    "size": 3867,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class DecontaminationPage(QWidget):"
+      },
+      {
+        "line": 8,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 12,
+        "indent": 4,
+        "sig": "def setup_ui(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, \n                               QPushButton, QLabel, QTableWidget, QTableWidgetItem, QDateEdit, QComboBox, \n                               QTreeWidget, QTreeWidgetItem, QHeaderView)\nfrom PySide6.QtCore import Qt, QDate\nfrom PySide6.QtGui import QFont\n\nclass DecontaminationPage(QWidget):\n    def __init__(self):\n        super().__init__()\n        # Controller will call setup_ui\n\n    def setup_ui(self):\n        layout = QVBoxLayout(s"
+  },
+  "views\\distribution.py": {
+    "size": 39908,
+    "methods": [
+      {
+        "line": 11,
+        "indent": 0,
+        "sig": "class ReceivePage(QWidget):"
+      },
+      {
+        "line": 12,
+        "indent": 4,
+        "sig": "def __init__(self, user_data=None):"
+      },
+      {
+        "line": 73,
+        "indent": 4,
+        "sig": "def refresh_all(self):"
+      },
+      {
+        "line": 83,
+        "indent": 4,
+        "sig": "def setup_multi_tab(self):"
+      },
+      {
+        "line": 101,
+        "indent": 4,
+        "sig": "def sync_google_form(self):"
+      },
+      {
+        "line": 203,
+        "indent": 20,
+        "sig": "def parse_ts_to_ymd(ts_str):"
+      },
+      {
+        "line": 278,
+        "indent": 4,
+        "sig": "def load_multi_client(self):"
+      },
+      {
+        "line": 359,
+        "indent": 4,
+        "sig": "def receive_all_ids(self, ids):"
+      },
+      {
+        "line": 377,
+        "indent": 4,
+        "sig": "def reject_all_ids(self, ids):"
+      },
+      {
+        "line": 384,
+        "indent": 4,
+        "sig": "def receive_only(self, req_id):"
+      },
+      {
+        "line": 395,
+        "indent": 4,
+        "sig": "def reject_ticket(self, req_id):"
+      },
+      {
+        "line": 402,
+        "indent": 4,
+        "sig": "def setup_ward_send_tab(self):"
+      },
+      {
+        "line": 440,
+        "indent": 4,
+        "sig": "def client_send_dirty(self):"
+      },
+      {
+        "line": 469,
+        "indent": 4,
+        "sig": "def show_receive_detail(self, item, column):"
+      },
+      {
+        "line": 488,
+        "indent": 4,
+        "sig": "def load_ward_send(self):"
+      },
+      {
+        "line": 507,
+        "indent": 4,
+        "sig": "def setup_ward_nhan_tab(self):"
+      },
+      {
+        "line": 514,
+        "indent": 4,
+        "sig": "def load_ward_nhan(self):"
+      },
+      {
+        "line": 525,
+        "indent": 4,
+        "sig": "def setup_ward_req_tab(self):"
+      },
+      {
+        "line": 536,
+        "indent": 4,
+        "sig": "def req_linh_bu(self):"
+      },
+      {
+        "line": 544,
+        "indent": 4,
+        "sig": "def load_ward_req(self):"
+      },
+      {
+        "line": 554,
+        "indent": 4,
+        "sig": "def setup_patient_tab(self):"
+      },
+      {
+        "line": 562,
+        "indent": 4,
+        "sig": "def phat_do(self):"
+      },
+      {
+        "line": 573,
+        "indent": 4,
+        "sig": "def setup_ward_inv_tab(self):"
+      },
+      {
+        "line": 580,
+        "indent": 4,
+        "sig": "def load_ward_inv(self):"
+      },
+      {
+        "line": 591,
+        "indent": 4,
+        "sig": "def do_search_ward_send_khoa(self):"
+      },
+      {
+        "line": 609,
+        "indent": 4,
+        "sig": "def select_ward_send_khoa(self, item):"
+      },
+      {
+        "line": 613,
+        "indent": 0,
+        "sig": "class IssuePage(QWidget):"
+      },
+      {
+        "line": 614,
+        "indent": 4,
+        "sig": "def __init__(self, user_data=None):"
+      },
+      {
+        "line": 642,
+        "indent": 4,
+        "sig": "def refresh_all(self):"
+      },
+      {
+        "line": 648,
+        "indent": 4,
+        "sig": "def setup_laundry_tab(self):"
+      },
+      {
+        "line": 655,
+        "indent": 4,
+        "sig": "def load_laundry(self):"
+      },
+      {
+        "line": 671,
+        "indent": 4,
+        "sig": "def finish_laundry(self, req_id, ma, sl):"
+      },
+      {
+        "line": 675,
+        "indent": 4,
+        "sig": "def setup_issue_tab(self):"
+      },
+      {
+        "line": 718,
+        "indent": 4,
+        "sig": "def create_issue(self):"
+      },
+      {
+        "line": 739,
+        "indent": 4,
+        "sig": "def show_issue_detail(self, item):"
+      },
+      {
+        "line": 751,
+        "indent": 4,
+        "sig": "def load_issue(self):"
+      },
+      {
+        "line": 763,
+        "indent": 4,
+        "sig": "def export_issue_csv(self):"
+      },
+      {
+        "line": 778,
+        "indent": 4,
+        "sig": "def setup_linh_bu_tab_ksnk(self):"
+      },
+      {
+        "line": 789,
+        "indent": 4,
+        "sig": "def load_linh_bu_ksnk(self):"
+      },
+      {
+        "line": 800,
+        "indent": 4,
+        "sig": "def approve_lb(self):"
+      },
+      {
+        "line": 816,
+        "indent": 4,
+        "sig": "def do_search_issue_khoa(self):"
+      },
+      {
+        "line": 834,
+        "indent": 4,
+        "sig": "def select_issue_khoa(self, item):"
+      }
+    ],
+    "preview": "from utils.vietnamese_filter import remove_vietnamese_accents\nfrom PySide6.QtWidgets import (QComboBox, QWidget, QLineEdit, QListWidget, QVBoxLayout, QHBoxLayout, QPushButton, QDateEdit, \n                               QLabel, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QHeaderView, QTabWidget, \n                               QMessageBox, QInputDialog, QFileDialog)\nfrom PySide6.QtCore import QTimer, Qt, QDate\nfrom models.db_manager import DBManager\nfrom utils.ui_helpers import "
+  },
+  "views\\inventory_extra.py": {
+    "size": 13086,
+    "methods": [
+      {
+        "line": 9,
+        "indent": 0,
+        "sig": "class InventoryExtraPage(QWidget):"
+      },
+      {
+        "line": 10,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 49,
+        "indent": 4,
+        "sig": "def setup_audit_table(self):"
+      },
+      {
+        "line": 59,
+        "indent": 4,
+        "sig": "def log_audit(self, bang, ma_item, noi_dung):"
+      },
+      {
+        "line": 63,
+        "indent": 4,
+        "sig": "def setup_dung_cu_tab(self):"
+      },
+      {
+        "line": 78,
+        "indent": 4,
+        "sig": "def setup_do_vai_tab(self):"
+      },
+      {
+        "line": 110,
+        "indent": 4,
+        "sig": "def setup_bo_tab(self):"
+      },
+      {
+        "line": 125,
+        "indent": 4,
+        "sig": "def nhap_kho_ncc(self):"
+      },
+      {
+        "line": 135,
+        "indent": 4,
+        "sig": "def xuat_luu_hanh(self):"
+      },
+      {
+        "line": 145,
+        "indent": 4,
+        "sig": "def chuyen_loai(self):"
+      },
+      {
+        "line": 157,
+        "indent": 4,
+        "sig": "def thanh_ly(self):"
+      },
+      {
+        "line": 167,
+        "indent": 4,
+        "sig": "def load_all_data(self):"
+      },
+      {
+        "line": 217,
+        "indent": 4,
+        "sig": "def edit_cell(self, item, table_name, columns):"
+      },
+      {
+        "line": 248,
+        "indent": 4,
+        "sig": "def add_item(self, table_type):"
+      },
+      {
+        "line": 261,
+        "indent": 8,
+        "sig": "def save():"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, \n                               QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QTabWidget, \n                               QMessageBox, QInputDialog, QDialog, QFormLayout, QLineEdit)\nfrom models.db_manager import DBManager\nfrom PySide6.QtGui import QFont\nfrom datetime import datetime\nfrom utils.ui_helpers import get_autocomplete_input\n\nclass InventoryExtraPage(QWidget):\n    def __init__(self):\n        super().__"
+  },
+  "views\\login.py": {
+    "size": 5069,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class RegisterDialog(QDialog):"
+      },
+      {
+        "line": 8,
+        "indent": 4,
+        "sig": "def __init__(self, db, parent=None):"
+      },
+      {
+        "line": 58,
+        "indent": 4,
+        "sig": "def do_register(self):"
+      },
+      {
+        "line": 78,
+        "indent": 0,
+        "sig": "class LoginWindow(QWidget):"
+      },
+      {
+        "line": 82,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 127,
+        "indent": 4,
+        "sig": "def show_warning(self, title, message):"
+      },
+      {
+        "line": 130,
+        "indent": 4,
+        "sig": "def show_error(self, title, message):"
+      },
+      {
+        "line": 133,
+        "indent": 4,
+        "sig": "def show_register_dialog(self, db):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, \n                               QPushButton, QLabel, QLineEdit, QMessageBox, QDialog, QComboBox)\nfrom PySide6.QtCore import Qt, Signal\nfrom PySide6.QtGui import QFont\nfrom models.db_manager import DBManager\n\nclass RegisterDialog(QDialog):\n    def __init__(self, db, parent=None):\n        super().__init__(parent)\n        self.db = db\n        self.setWindowTitle(\"Đăng ký tài khoản\")\n        self.setFixedSize(400, 450)\n        \n      "
+  },
+  "views\\main_window.py": {
+    "size": 4979,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class MainWindow(QWidget):"
+      },
+      {
+        "line": 10,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 14,
+        "indent": 4,
+        "sig": "def setup_ui(self, user_data):"
+      },
+      {
+        "line": 111,
+        "indent": 4,
+        "sig": "def create_nav_button(self, text, icon=None):"
+      },
+      {
+        "line": 122,
+        "indent": 4,
+        "sig": "def switch_page(self, index, button):"
+      },
+      {
+        "line": 128,
+        "indent": 4,
+        "sig": "def add_page(self, widget):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, \n                               QPushButton, QLabel, QStackedWidget, QFrame)\nfrom PySide6.QtCore import Qt, Signal, QSize\nfrom PySide6.QtGui import QFont\nimport qtawesome as qta\n\nclass MainWindow(QWidget):\n    logout_requested = Signal()\n\n    def __init__(self):\n        super().__init__()\n        # Controller will call setup_ui\n\n    def setup_ui(self, user_data):\n        self.user_data = user_data\n        self.role = self.user_dat"
+  },
+  "views\\management.py": {
+    "size": 21387,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class EditDialog(QDialog):"
+      },
+      {
+        "line": 8,
+        "indent": 4,
+        "sig": "def __init__(self, title, fields, parent=None):"
+      },
+      {
+        "line": 64,
+        "indent": 4,
+        "sig": "def get_data(self):"
+      },
+      {
+        "line": 74,
+        "indent": 0,
+        "sig": "class ManagementPage(QWidget):"
+      },
+      {
+        "line": 75,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 106,
+        "indent": 4,
+        "sig": "def refresh_all(self):"
+      },
+      {
+        "line": 113,
+        "indent": 4,
+        "sig": "def setup_khoa_tab(self):"
+      },
+      {
+        "line": 128,
+        "indent": 4,
+        "sig": "def load_khoa(self):"
+      },
+      {
+        "line": 149,
+        "indent": 4,
+        "sig": "def add_khoa(self):"
+      },
+      {
+        "line": 158,
+        "indent": 4,
+        "sig": "def edit_khoa(self, row_data):"
+      },
+      {
+        "line": 168,
+        "indent": 4,
+        "sig": "def setup_chutrinh_tab(self):"
+      },
+      {
+        "line": 183,
+        "indent": 4,
+        "sig": "def load_chutrinh(self):"
+      },
+      {
+        "line": 206,
+        "indent": 4,
+        "sig": "def add_chutrinh(self):"
+      },
+      {
+        "line": 220,
+        "indent": 4,
+        "sig": "def edit_chutrinh(self, row_data):"
+      },
+      {
+        "line": 235,
+        "indent": 4,
+        "sig": "def setup_item_tab(self):"
+      },
+      {
+        "line": 256,
+        "indent": 4,
+        "sig": "def load_items(self):"
+      },
+      {
+        "line": 294,
+        "indent": 4,
+        "sig": "def add_item(self, item_type):"
+      },
+      {
+        "line": 314,
+        "indent": 4,
+        "sig": "def edit_item(self, row_data):"
+      },
+      {
+        "line": 338,
+        "indent": 4,
+        "sig": "def delete_record(self, table, record_id, key_col=\"id\"):"
+      },
+      {
+        "line": 348,
+        "indent": 4,
+        "sig": "def setup_may_tab(self):"
+      },
+      {
+        "line": 363,
+        "indent": 4,
+        "sig": "def load_may(self):"
+      },
+      {
+        "line": 400,
+        "indent": 4,
+        "sig": "def _get_may_fields(self, row_data=None):"
+      },
+      {
+        "line": 425,
+        "indent": 4,
+        "sig": "def add_may(self):"
+      },
+      {
+        "line": 448,
+        "indent": 4,
+        "sig": "def edit_may(self, row_data):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, \n                               QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QTabWidget, \n                               QMessageBox, QInputDialog, QDialog, QFormLayout, QLineEdit, QComboBox, QSpinBox)\nfrom PySide6.QtCore import Qt\nfrom models.db_manager import DBManager\n\nclass EditDialog(QDialog):\n    def __init__(self, title, fields, parent=None):\n        super().__init__(parent)\n        self.setWindowTitle("
+  },
+  "views\\master_data.py": {
+    "size": 6685,
+    "methods": [
+      {
+        "line": 6,
+        "indent": 0,
+        "sig": "class MasterDataPage(QWidget):"
+      },
+      {
+        "line": 7,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 33,
+        "indent": 4,
+        "sig": "def refresh_all(self):"
+      },
+      {
+        "line": 40,
+        "indent": 4,
+        "sig": "def setup_khoa_tab(self):"
+      },
+      {
+        "line": 54,
+        "indent": 4,
+        "sig": "def load_khoa(self):"
+      },
+      {
+        "line": 66,
+        "indent": 4,
+        "sig": "def add_khoa(self):"
+      },
+      {
+        "line": 73,
+        "indent": 4,
+        "sig": "def setup_dovai_tab(self):"
+      },
+      {
+        "line": 87,
+        "indent": 4,
+        "sig": "def load_dovai(self):"
+      },
+      {
+        "line": 100,
+        "indent": 4,
+        "sig": "def add_dovai(self):"
+      },
+      {
+        "line": 111,
+        "indent": 4,
+        "sig": "def setup_bodungcu_tab(self):"
+      },
+      {
+        "line": 125,
+        "indent": 4,
+        "sig": "def load_bodungcu(self):"
+      },
+      {
+        "line": 137,
+        "indent": 4,
+        "sig": "def add_bo(self):"
+      },
+      {
+        "line": 146,
+        "indent": 4,
+        "sig": "def setup_may_tab(self):"
+      },
+      {
+        "line": 150,
+        "indent": 4,
+        "sig": "def load_may(self):"
+      },
+      {
+        "line": 154,
+        "indent": 4,
+        "sig": "def delete_record(self, table, record_id, key_col=\"id\"):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, \n                               QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QTabWidget, \n                               QMessageBox, QInputDialog)\nfrom models.db_manager import DBManager\n\nclass MasterDataPage(QWidget):\n    def __init__(self):\n        super().__init__()\n        self.db = DBManager()\n        layout = QVBoxLayout(self)\n        \n        self.tabs = QTabWidget()\n        \n        self.tab_khoa = QW"
+  },
+  "views\\reports.py": {
+    "size": 11439,
+    "methods": [
+      {
+        "line": 8,
+        "indent": 0,
+        "sig": "class ReportsPage(QWidget):"
+      },
+      {
+        "line": 9,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 41,
+        "indent": 4,
+        "sig": "def setup_trace_tab(self):"
+      },
+      {
+        "line": 71,
+        "indent": 4,
+        "sig": "def do_trace(self):"
+      },
+      {
+        "line": 127,
+        "indent": 4,
+        "sig": "def setup_stats_tab(self):"
+      },
+      {
+        "line": 171,
+        "indent": 4,
+        "sig": "def calculate_stats(self):"
+      },
+      {
+        "line": 193,
+        "indent": 4,
+        "sig": "def setup_log_tab(self):"
+      },
+      {
+        "line": 208,
+        "indent": 4,
+        "sig": "def load_logs(self):"
+      },
+      {
+        "line": 220,
+        "indent": 4,
+        "sig": "def export_csv(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, \n                               QLabel, QTableWidget, QTableWidgetItem, QHeaderView, \n                               QFileDialog, QMessageBox, QTabWidget, QLineEdit, QComboBox, QDateEdit, QGridLayout)\nfrom PySide6.QtCore import Qt, QDate\nfrom models.db_manager import DBManager\nimport csv\n\nclass ReportsPage(QWidget):\n    def __init__(self):\n        super().__init__()\n        self.db = DBManager()\n        layout = QVBox"
+  },
+  "views\\settings.py": {
+    "size": 11038,
+    "methods": [
+      {
+        "line": 9,
+        "indent": 0,
+        "sig": "class LinkDialog(QDialog):"
+      },
+      {
+        "line": 10,
+        "indent": 4,
+        "sig": "def __init__(self, parent, title, link_data=None):"
+      },
+      {
+        "line": 37,
+        "indent": 4,
+        "sig": "def get_data(self):"
+      },
+      {
+        "line": 41,
+        "indent": 0,
+        "sig": "class SettingsPage(QWidget):"
+      },
+      {
+        "line": 42,
+        "indent": 4,
+        "sig": "def __init__(self, user_data=None):"
+      },
+      {
+        "line": 61,
+        "indent": 4,
+        "sig": "def setup_links_tab(self):"
+      },
+      {
+        "line": 80,
+        "indent": 4,
+        "sig": "def load_links(self):"
+      },
+      {
+        "line": 92,
+        "indent": 4,
+        "sig": "def add_link(self):"
+      },
+      {
+        "line": 102,
+        "indent": 4,
+        "sig": "def edit_link(self):"
+      },
+      {
+        "line": 113,
+        "indent": 4,
+        "sig": "def delete_link(self):"
+      },
+      {
+        "line": 122,
+        "indent": 4,
+        "sig": "def setup_mapping_tab(self):"
+      },
+      {
+        "line": 149,
+        "indent": 4,
+        "sig": "def load_mappings(self):"
+      },
+      {
+        "line": 215,
+        "indent": 4,
+        "sig": "def save_mappings(self):"
+      },
+      {
+        "line": 238,
+        "indent": 4,
+        "sig": "def confirm_all(self):"
+      },
+      {
+        "line": 242,
+        "indent": 4,
+        "sig": "def auto_remap(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, \n                               QLabel, QTableWidget, QTableWidgetItem, QHeaderView, \n                               QMessageBox, QTabWidget, QInputDialog, QDialog, \n                               QLineEdit, QComboBox, QCheckBox, QAbstractItemView)\nfrom PySide6.QtCore import Qt\nfrom models.db_manager import DBManager\n\n\nclass LinkDialog(QDialog):\n    def __init__(self, parent, title, link_data=None):\n        super().__"
+  },
+  "views\\sterilization.py": {
+    "size": 27785,
+    "methods": [
+      {
+        "line": 11,
+        "indent": 0,
+        "sig": "class TestResultDialog(QDialog):"
+      },
+      {
+        "line": 12,
+        "indent": 4,
+        "sig": "def __init__(self, machine_name, parent=None):"
+      },
+      {
+        "line": 46,
+        "indent": 4,
+        "sig": "def confirm(self):"
+      },
+      {
+        "line": 63,
+        "indent": 0,
+        "sig": "class LoadItemsDialog(QDialog):"
+      },
+      {
+        "line": 64,
+        "indent": 4,
+        "sig": "def __init__(self, parent_page, machine_name, parent=None):"
+      },
+      {
+        "line": 102,
+        "indent": 4,
+        "sig": "def load_items(self):"
+      },
+      {
+        "line": 136,
+        "indent": 4,
+        "sig": "def accept(self):"
+      },
+      {
+        "line": 143,
+        "indent": 0,
+        "sig": "class DetailViewDialog(QDialog):"
+      },
+      {
+        "line": 144,
+        "indent": 4,
+        "sig": "def __init__(self, machine_name, items_list, parent=None):"
+      },
+      {
+        "line": 175,
+        "indent": 0,
+        "sig": "class MachineDetailDialog(QDialog):"
+      },
+      {
+        "line": 178,
+        "indent": 4,
+        "sig": "def __init__(self, mac, loaded_items, parent=None):"
+      },
+      {
+        "line": 235,
+        "indent": 8,
+        "sig": "def make_info_box(title, value, bg='#f8f9fa'):"
+      },
+      {
+        "line": 307,
+        "indent": 4,
+        "sig": "def _tick(self):"
+      },
+      {
+        "line": 326,
+        "indent": 0,
+        "sig": "class MachineCard(QFrame):"
+      },
+      {
+        "line": 327,
+        "indent": 4,
+        "sig": "def __init__(self, parent_page):"
+      },
+      {
+        "line": 392,
+        "indent": 4,
+        "sig": "def _tick_local(self):"
+      },
+      {
+        "line": 412,
+        "indent": 4,
+        "sig": "def show_detail(self):"
+      },
+      {
+        "line": 419,
+        "indent": 4,
+        "sig": "def on_load(self):"
+      },
+      {
+        "line": 425,
+        "indent": 4,
+        "sig": "def on_action(self):"
+      },
+      {
+        "line": 441,
+        "indent": 4,
+        "sig": "def on_cancel(self):"
+      },
+      {
+        "line": 447,
+        "indent": 4,
+        "sig": "def mousePressEvent(self, event):"
+      },
+      {
+        "line": 453,
+        "indent": 4,
+        "sig": "def open_detail_dialog(self):"
+      },
+      {
+        "line": 463,
+        "indent": 4,
+        "sig": "def update_data(self, mac):"
+      },
+      {
+        "line": 557,
+        "indent": 0,
+        "sig": "class SterilizationPage(QWidget):"
+      },
+      {
+        "line": 565,
+        "indent": 4,
+        "sig": "def __init__(self):"
+      },
+      {
+        "line": 616,
+        "indent": 4,
+        "sig": "def set_db(self, db):"
+      },
+      {
+        "line": 619,
+        "indent": 4,
+        "sig": "def render_table(self, machines):"
+      },
+      {
+        "line": 642,
+        "indent": 4,
+        "sig": "def update_history_table(self, rows):"
+      }
+    ],
+    "preview": "import json\nfrom datetime import datetime\nfrom PySide6.QtWidgets import (QSpinBox, QFrame, QScrollArea, QWidget, QVBoxLayout, QPushButton, QLabel, QTableWidget, \n                               QTableWidgetItem, QHeaderView, QMessageBox, QDialog, QComboBox, \n                               QCheckBox, QHBoxLayout, QFormLayout, QDateEdit, QSplitter,\n                               QTreeWidget, QTreeWidgetItem)\nfrom PySide6.QtCore import Qt, QTimer, QDate, Signal\nfrom PySide6.QtGui import QFont\nfrom P"
+  },
+  "views\\traceability_dialog.py": {
+    "size": 3266,
+    "methods": [
+      {
+        "line": 7,
+        "indent": 0,
+        "sig": "class TraceabilityDialog(QDialog):"
+      },
+      {
+        "line": 8,
+        "indent": 4,
+        "sig": "def __init__(self, title, items, parent=None):"
+      },
+      {
+        "line": 39,
+        "indent": 4,
+        "sig": "def populate_table(self):"
+      }
+    ],
+    "preview": "from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, \n                               QTableWidget, QTableWidgetItem, QHeaderView, QPushButton,\n                               QFrame, QScrollArea, QWidget)\nfrom PySide6.QtCore import Qt\nfrom PySide6.QtGui import QFont, QColor\n\nclass TraceabilityDialog(QDialog):\n    def __init__(self, title, items, parent=None):\n        super().__init__(parent)\n        self.setWindowTitle(title)\n        self.setMinimumSize(900, 600)\n        self"
+  },
+  "views\\__init__.py": {
+    "size": 0,
+    "methods": [],
+    "preview": ""
+  }
+}

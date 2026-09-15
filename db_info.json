@@ -1,0 +1,179 @@
+{
+  "machines": [
+    {
+      "id": 1,
+      "name": "Máy giặt 1",
+      "group_id": 1,
+      "area_id": 1,
+      "status": "READY",
+      "end_time": null,
+      "loaded_items_json": null
+    },
+    {
+      "id": 2,
+      "name": "Máy giặt 2",
+      "group_id": 1,
+      "area_id": 1,
+      "status": "READY",
+      "end_time": null,
+      "loaded_items_json": null
+    },
+    {
+      "id": 3,
+      "name": "Máy sấy 1",
+      "group_id": 2,
+      "area_id": 2,
+      "status": "READY",
+      "end_time": null,
+      "loaded_items_json": null
+    },
+    {
+      "id": 4,
+      "name": "Máy sấy 2",
+      "group_id": 2,
+      "area_id": 2,
+      "status": "READY",
+      "end_time": null,
+      "loaded_items_json": null
+    },
+    {
+      "id": 5,
+      "name": "Máy tiệt trùng 1",
+      "group_id": 3,
+      "area_id": 3,
+      "status": "READY",
+      "end_time": null,
+      "loaded_items_json": "[{\"khoa_giao\": \"gmhs\", \"loai\": \"Khac\", \"ma_san_pham\": \"34\", \"req_id\": 5, \"so_luong\": 1, \"ten_san_pham\": \"B\\u1ed8 S\\u1ea2N 1\"}, {\"khoa_giao\": \"gmhs\", \"loai\": \"Khac\", \"ma_san_pham\": \"35\", \"req_id\": 6, \"so_luong\": 1, \"ten_san_pham\": \"B\\u1ed8 S\\u1ea2N 2\"}, {\"khoa_giao\": \"gmhs\", \"loai\": \"Khac\", \"ma_san_pham\": \"36\", \"req_id\": 7, \"so_luong\": 1, \"ten_san_pham\": \"B\\u1ed8 S\\u1ea2N 3\"}, {\"khoa_giao\": \"gmhs\", \"loai\": \"Khac\", \"ma_san_pham\": \"37\", \"req_id\": 8, \"so_luong\": 1, \"ten_san_pham\": \"B\\u1ed8 S\\u1ea2N 4\"}, {\"khoa_giao\": \"gmhs\", \"loai\": \"Khac\", \"ma_san_pham\": \"38\", \"req_id\": 9, \"so_luong\": 1, \"ten_san_pham\": \"B\\u1ed8 S\\u1ea2N 5\"}, {\"khoa_giao\": \"gmhs\", \"loai\": \"Khac\", \"ma_san_pham\": \"339\", \"req_id\": 10, \"so_luong\": 1, \"ten_san_pham\": \"339\"}]"
+    },
+    {
+      "id": 6,
+      "name": "Máy tiệt trùng 2",
+      "group_id": 3,
+      "area_id": 3,
+      "status": "READY",
+      "end_time": null,
+      "loaded_items_json": null
+    },
+    {
+      "id": 7,
+      "name": "PLASMA 1",
+      "group_id": 3,
+      "area_id": 3,
+      "status": "READY",
+      "end_time": null,
+      "loaded_items_json": null
+    }
+  ],
+  "cycle_types": [
+    {
+      "id": 1,
+      "name": "134 Độ C",
+      "thoi_gian": 60,
+      "phuong_phap": "Steam"
+    },
+    {
+      "id": 2,
+      "name": "121 Độ C",
+      "thoi_gian": 60,
+      "phuong_phap": "Steam"
+    },
+    {
+      "id": 3,
+      "name": "Giặt nhiệt",
+      "thoi_gian": 60,
+      "phuong_phap": "Steam"
+    },
+    {
+      "id": 4,
+      "name": "Giặt hóa chất",
+      "thoi_gian": 60,
+      "phuong_phap": "Steam"
+    },
+    {
+      "id": 5,
+      "name": "Sấy 60 phút",
+      "thoi_gian": 60,
+      "phuong_phap": "Steam"
+    },
+    {
+      "id": 6,
+      "name": "PLASMA LUMEN ( LONG)",
+      "thoi_gian": 60,
+      "phuong_phap": "Steam"
+    }
+  ],
+  "machine_cycle_types": [
+    {
+      "machine_id": 1,
+      "cycle_type_id": 3
+    },
+    {
+      "machine_id": 1,
+      "cycle_type_id": 4
+    },
+    {
+      "machine_id": 2,
+      "cycle_type_id": 3
+    },
+    {
+      "machine_id": 2,
+      "cycle_type_id": 4
+    },
+    {
+      "machine_id": 3,
+      "cycle_type_id": 5
+    },
+    {
+      "machine_id": 4,
+      "cycle_type_id": 5
+    },
+    {
+      "machine_id": 5,
+      "cycle_type_id": 1
+    },
+    {
+      "machine_id": 5,
+      "cycle_type_id": 2
+    },
+    {
+      "machine_id": 6,
+      "cycle_type_id": 1
+    },
+    {
+      "machine_id": 6,
+      "cycle_type_id": 2
+    },
+    {
+      "machine_id": 7,
+      "cycle_type_id": 6
+    }
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "name": "Máy giặt"
+    },
+    {
+      "id": 2,
+      "name": "Máy sấy"
+    },
+    {
+      "id": 3,
+      "name": "Máy tiệt trùng"
+    }
+  ],
+  "areas": [
+    {
+      "id": 1,
+      "name": "Khu bẩn"
+    },
+    {
+      "id": 2,
+      "name": "Khu sạch"
+    },
+    {
+      "id": 3,
+      "name": "Khu tiệt khuẩn"
+    }
+  ]
+}

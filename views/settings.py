@@ -248,10 +248,10 @@ class SettingsPage(QWidget):
     def auto_remap(self):
         QMessageBox.information(self, "Thong bao", "Tinh nang tu dong match se duoc them sau!")
 
-    # -------- PRINT SETTINGS TAB --------
     def setup_print_tab(self):
-        from PySide6.QtWidgets import QSpinBox, QGroupBox, QGridLayout
+        from PySide6.QtWidgets import QSpinBox, QGroupBox, QGridLayout, QComboBox
         from PySide6.QtGui import QPainter, QImage, QFont, QPixmap, QColor
+        from PySide6.QtPrintSupport import QPrinterInfo
         import qrcode
         import io
         from datetime import datetime
@@ -260,25 +260,42 @@ class SettingsPage(QWidget):
         
         # Left side: Form controls
         left_layout = QVBoxLayout()
-        group = QGroupBox("Thông số căn chỉnh Tem (mm)")
+        group = QGroupBox("Thông số Tem (mm)")
         grid = QGridLayout(group)
         
         self.print_cfg = {
-            'width': 50, 'height': 30, 'qr_size': 20, 'qr_x': 2, 'qr_y': 5,
-            'text_x': 25, 'ma_y': 8, 'ma_size': 12,
-            'ten_y': 15, 'ten_size': 10,
-            'nsx_y': 22, 'nsx_size': 8
+            'printer_name': '',
+            'width': 50, 'height': 30, 'qr_size': 18, 'qr_x': 2, 'qr_y': 5,
+            'text_x': 22, 'ma_y': 5, 'ma_size': 10,
+            'ten_y': 10, 'ten_size': 8,
+            'pptk_y': 15, 'pptk_size': 8,
+            'ntk_y': 20, 'ntk_size': 8,
+            'hsd_y': 25, 'hsd_size': 8,
+            'nv_y': 28, 'nv_size': 8
         }
         self.cfg_file = 'print_config.json'
         if __import__('os').path.exists(self.cfg_file):
-            import json
             try:
+                import json
                 self.print_cfg.update(json.load(open(self.cfg_file)))
             except: pass
             
-        self.spinboxes = {}
         row = 0
+        grid.addWidget(QLabel("Máy in:"), row, 0)
+        self.cb_printers = QComboBox()
+        self.cb_printers.addItem("--- Chọn mỗi lần in ---", "")
+        for pname in QPrinterInfo.availablePrinterNames():
+            self.cb_printers.addItem(pname, pname)
+        # set current
+        idx = self.cb_printers.findData(self.print_cfg.get('printer_name', ''))
+        if idx >= 0: self.cb_printers.setCurrentIndex(idx)
+        grid.addWidget(self.cb_printers, row, 1)
+        row += 1
+            
+        self.spinboxes = {}
+        # Only spinboxes for numeric keys
         for key, val in self.print_cfg.items():
+            if key == 'printer_name': continue
             lbl = QLabel(key)
             spin = QSpinBox()
             spin.setRange(1, 200)
@@ -316,12 +333,10 @@ class SettingsPage(QWidget):
         from PySide6.QtCore import Qt
         import qrcode
         import io
-        from datetime import datetime
+        from datetime import datetime, timedelta
         
         cfg = {k: v.value() for k, v in self.spinboxes.items()}
         
-        # 1 mm ~ 3.78 pixels (at 96 DPI screen)
-        # Let's scale up for preview (e.g., 1mm = 10 pixels for sharp preview)
         scale = 8
         w_px = cfg['width'] * scale
         h_px = cfg['height'] * scale
@@ -331,7 +346,6 @@ class SettingsPage(QWidget):
         
         painter = QPainter(img)
         
-        # Draw QR
         qr = qrcode.QRCode(version=1, box_size=10, border=1)
         qr.add_data("BO-TEST")
         qr.make(fit=True)
@@ -343,26 +357,24 @@ class SettingsPage(QWidget):
         qr_size_px = cfg['qr_size'] * scale
         painter.drawImage(cfg['qr_x'] * scale, cfg['qr_y'] * scale, qimg_qr.scaled(qr_size_px, qr_size_px, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         
-        # Draw Text
         x_px = cfg['text_x'] * scale
         
-        font = QFont("Arial", cfg['ma_size'])
-        font.setBold(True)
-        # Tweak pixel size for preview matching
-        font.setPixelSize(int(cfg['ma_size'] * scale * 0.35)) 
-        painter.setFont(font)
-        painter.setPen(QColor("black"))
-        painter.drawText(x_px, cfg['ma_y'] * scale, "MÃ: BO-TEST")
+        def draw_txt(y_mm, size_mm, text, bold=False):
+            font = QFont("Arial")
+            font.setBold(bold)
+            font.setPixelSize(int(size_mm * scale * 0.35))
+            painter.setFont(font)
+            painter.setPen(QColor("black"))
+            painter.drawText(x_px, y_mm * scale, text)
+            
+        draw_txt(cfg['ma_y'], cfg['ma_size'], "MÃ: BO-TEST", True)
+        draw_txt(cfg['ten_y'], cfg['ten_size'], "TÊN: Bộ Kéo Răng")
+        draw_txt(cfg['pptk_y'], cfg['pptk_size'], "PPTK: STEAM")
         
-        font.setBold(False)
-        font.setPixelSize(int(cfg['ten_size'] * scale * 0.35))
-        painter.setFont(font)
-        painter.drawText(x_px, cfg['ten_y'] * scale, "TÊN: Bộ Xét Nghiệm")
-        
-        font.setPixelSize(int(cfg['nsx_size'] * scale * 0.35))
-        painter.setFont(font)
-        now_str = datetime.now().strftime("%d/%m/%Y")
-        painter.drawText(x_px, cfg['nsx_y'] * scale, f"NSX: {now_str}")
+        now = datetime.now()
+        draw_txt(cfg['ntk_y'], cfg['ntk_size'], f"NTK: {now.strftime('%d/%m/%y %H:%M')}")
+        draw_txt(cfg['hsd_y'], cfg['hsd_size'], f"HSD: {(now+timedelta(days=30)).strftime('%d/%m/%y')}")
+        draw_txt(cfg['nv_y'], cfg['nv_size'], f"NV: Nguyễn Văn A")
         
         painter.end()
         self.lbl_preview.setPixmap(QPixmap.fromImage(img))
@@ -370,6 +382,7 @@ class SettingsPage(QWidget):
     def save_print_settings(self):
         import json
         cfg = {k: v.value() for k, v in self.spinboxes.items()}
+        cfg['printer_name'] = self.cb_printers.currentData()
         try:
             with open(self.cfg_file, 'w') as f:
                 json.dump(cfg, f, indent=4)

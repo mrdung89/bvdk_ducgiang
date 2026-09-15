@@ -1,11 +1,9 @@
-from PySide6.QtPrintSupport import QPrinter, QPrintDialog
-from PySide6.QtGui import QPainter, QImage, QFont, QPixmap, QTextDocument
-from PySide6.QtCore import Qt
-import qrcode
-from datetime import datetime
-import io
+import sys
 
-def print_assembly_label(parent_widget, ma_bo, ten_bo, nguoi_dong_goi="", pptk="", han_tiet_khuan_days=30):
+with open(r'C:\Users\Admin\Desktop\bvdkdg\bvdk_ducgiang\utils\printer.py', 'r', encoding='utf-8') as f:
+    c = f.read()
+
+new_printer_func = '''def print_assembly_label(parent_widget, ma_bo, ten_bo, nguoi_dong_goi="", pptk="", han_tiet_khuan_days=30):
     """In tem mã vạch/QR cho bộ dụng cụ với cài đặt tùy chỉnh."""
     import json
     import os
@@ -101,89 +99,11 @@ def print_assembly_label(parent_widget, ma_bo, ten_bo, nguoi_dong_goi="", pptk="
             
         painter.end()
         return True
-    return False
+    return False'''
 
-def print_handover_receipt(parent_widget, ma_phien, khoa_giao, khoa_nhan, items, nguoi_lap_phieu=""):
-    """In phi?Hu giao nhA-n (Receipt) ra mA!y in A4/A5."""
-    html = f"""
-    <html>
-    <head>
-        <style>
-            body {{ font-family: Arial, sans-serif; font-size: 14pt; }}
-            h2 {{ text-align: center; margin-bottom: 5px; }}
-            h3 {{ text-align: center; margin-top: 0px; color: #555; }}
-            .info-table {{ width: 100%; margin-bottom: 20px; }}
-            .item-table {{ width: 100%; border-collapse: collapse; }}
-            .item-table th, .item-table td {{ border: 1px solid #000; padding: 8px; text-align: left; }}
-            .item-table th {{ background-color: #f2f2f2; }}
-            .footer-table {{ width: 100%; margin-top: 50px; text-align: center; }}
-        </style>
-    </head>
-    <body>
-        <h2>PHIẾU GIAO NHẬN ĐỒ VẢI / DỤNG CỤ</h2>
-        <h3>Bệnh viện Đa khoa Đức Giang</h3>
-        
-        <table class="info-table">
-            <tr>
-                <td><b>Mã Phiếu:</b> {ma_phien}</td>
-                <td style="text-align: right;"><b>Ngày lập:</b> {datetime.now().strftime("%d/%m/%Y %H:%M")}</td>
-            </tr>
-            <tr>
-                <td><b>Bên Giao:</b> {khoa_giao}</td>
-                <td style="text-align: right;"><b>Bên Nhận:</b> {khoa_nhan}</td>
-            </tr>
-        </table>
-        
-        <table class="item-table">
-            <thead>
-                <tr>
-                    <th>STT</th>
-                    <th>Mã Đồ</th>
-                    <th>Tên Đồ</th>
-                    <th>Số Lượng</th>
-                </tr>
-            </thead>
-            <tbody>
-    """
-    
-    total = 0
-    for i, item in enumerate(items):
-        ma = item.get('ma_do', '')
-        ten = item.get('ten_do', '')
-        sl = item.get('so_luong', 0)
-        total += sl
-        html += f"""
-                <tr>
-                    <td>{i+1}</td>
-                    <td>{ma}</td>
-                    <td>{ten}</td>
-                    <td>{sl}</td>
-                </tr>
-        """
-        
-    html += f"""
-            </tbody>
-        </table>
-        <p><b>Tổng cộng:</b> {total} (món/bộ)</p>
-        
-        <table class="footer-table">
-            <tr>
-                <td><b>Người Giao</b><br><br><br><br>____________________</td>
-                <td><b>Người Nhận</b><br><br><br><br>____________________</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding-top: 30px; text-align: left; font-size: 12pt;"><i>Người lập phiếu: {nguoi_lap_phieu}</i></td>
-            </tr>
-        </table>
-    </body>
-    </html>
-    """
-    
-    printer = QPrinter(QPrinter.HighResolution)
-    dialog = QPrintDialog(printer, parent_widget)
-    if dialog.exec() == QPrintDialog.Accepted:
-        doc = QTextDocument()
-        doc.setHtml(html)
-        doc.print_(printer)
-        return True
-    return False
+start = c.find('def print_assembly_label')
+end = c.find('def print_handover_receipt')
+c = c[:start] + new_printer_func + '\n\n' + c[end:]
+
+with open(r'C:\Users\Admin\Desktop\bvdkdg\bvdk_ducgiang\utils\printer.py', 'w', encoding='utf-8') as f:
+    f.write(c)

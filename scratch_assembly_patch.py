@@ -1,4 +1,6 @@
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, 
+import sys
+
+c = '''from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, 
                                QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
@@ -170,3 +172,7 @@ class AssemblyPage(QWidget):
                 
         QMessageBox.information(self, "Thành công", f"Đã đóng gói và in tem thành công cho {success_count} / {len(selected_items)} đồ!")
         self.load_items()
+'''
+
+with open(r'C:\Users\Admin\Desktop\bvdkdg\bvdk_ducgiang\views\assembly.py', 'w', encoding='utf-8') as f:
+    f.write(c)

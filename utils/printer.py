@@ -6,14 +6,24 @@ from datetime import datetime
 import io
 
 def print_assembly_label(parent_widget, ma_bo, ten_bo, nguoi_dong_goi=""):
-    """In tem mAc v!ch/QR cho bA' dM-ng cM- cA"ng cA!c thA#ng tin c?? bA#n."""
-    # Generate QR Code image
+    """In tem mã vạch/QR cho bộ dụng cụ với cài đặt tùy chỉnh."""
+    import json
+    import os
+    cfg = {
+        'width': 50, 'height': 30, 'qr_size': 20, 'qr_x': 2, 'qr_y': 5,
+        'text_x': 25, 'ma_y': 8, 'ma_size': 12,
+        'ten_y': 15, 'ten_size': 10,
+        'nsx_y': 22, 'nsx_size': 8
+    }
+    if os.path.exists('print_config.json'):
+        try: cfg.update(json.load(open('print_config.json')))
+        except: pass
+        
     qr = qrcode.QRCode(version=1, box_size=10, border=1)
     qr.add_data(ma_bo)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
     
-    # Convert PIL Image to QPixmap
     byte_array = io.BytesIO()
     img.save(byte_array, format='PNG')
     qimg = QImage.fromData(byte_array.getvalue())
@@ -28,28 +38,37 @@ def print_assembly_label(parent_widget, ma_bo, ten_bo, nguoi_dong_goi=""):
         dpi_x = printer.logicalDpiX()
         dpi_y = printer.logicalDpiY()
         
-        # QR Code size ~ 1.5 inches
-        qr_size = int(dpi_x * 1.5)
-        painter.drawPixmap(0, 0, qr_size, qr_size, qpixmap)
+        # Hàm chuyển đổi mm sang pixels trên giấy in
+        def mm_to_px(mm, dpi):
+            return int((mm / 25.4) * dpi)
+            
+        qr_size_px = mm_to_px(cfg['qr_size'], dpi_x)
+        qr_x_px = mm_to_px(cfg['qr_x'], dpi_x)
+        qr_y_px = mm_to_px(cfg['qr_y'], dpi_y)
+        painter.drawPixmap(qr_x_px, qr_y_px, qr_size_px, qr_size_px, qpixmap)
         
-        # Text layout
-        font = QFont("Arial", 12, QFont.Bold)
+        text_x_px = mm_to_px(cfg['text_x'], dpi_x)
+        
+        # MÃ
+        font = QFont("Arial", cfg['ma_size'])
+        font.setBold(True)
         painter.setFont(font)
-        x_text = qr_size + int(dpi_x * 0.2)
-        y_text = int(dpi_y * 0.4)
+        painter.drawText(text_x_px, mm_to_px(cfg['ma_y'], dpi_y), f"MÃ: {ma_bo}")
         
-        painter.drawText(x_text, y_text, f"Mã: {ma_bo}")
-        
-        font.setPointSize(10)
+        # TÊN
+        font.setPointSize(cfg['ten_size'])
         font.setBold(False)
         painter.setFont(font)
-        painter.drawText(x_text, y_text + int(dpi_y * 0.3), f"Tên: {ten_bo}")
+        painter.drawText(text_x_px, mm_to_px(cfg['ten_y'], dpi_y), f"TÊN: {ten_bo}")
         
-        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
-        painter.drawText(x_text, y_text + int(dpi_y * 0.6), f"NSX: {now_str}")
+        # NSX & NGƯỜI ĐÓNG GÓI
+        font.setPointSize(cfg['nsx_size'])
+        painter.setFont(font)
+        now_str = datetime.now().strftime("%d/%m/%Y")
+        painter.drawText(text_x_px, mm_to_px(cfg['nsx_y'], dpi_y), f"NSX: {now_str}")
         if nguoi_dong_goi:
-            painter.drawText(x_text, y_text + int(dpi_y * 0.9), f"Người ĐG: {nguoi_dong_goi}")
-        
+            painter.drawText(text_x_px, mm_to_px(cfg['nsx_y'] + 5, dpi_y), f"NĐG: {nguoi_dong_goi}")
+            
         painter.end()
         return True
     return False

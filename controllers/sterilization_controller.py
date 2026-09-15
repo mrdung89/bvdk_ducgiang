@@ -32,7 +32,7 @@ class SterilizationController(QObject):
     
     def get_pending_sessions(self):
         # CHỈ TÌM CÁC PHIẾU ĐÃ KHỬ NHIỄM
-        query = "SELECT DISTINCT khoa_giao, ma_phieu FROM lich_su_giao_nhan WHERE trang_thai='DA_KHU_NHIEM'"
+        query = "SELECT DISTINCT khoa_giao, ma_phieu FROM lich_su_giao_nhan WHERE trang_thai IN ('DA_KHU_NHIEM', 'DA_DONG_GOI')"
         sessions = self.db.fetch_all(query)
         result = []
         if sessions:
@@ -44,7 +44,7 @@ class SterilizationController(QObject):
         return result
 
     def get_session_items(self, khoa, ma_phieu):
-        query = "SELECT * FROM lich_su_giao_nhan WHERE ma_phieu=%s AND trang_thai='DA_KHU_NHIEM'"
+        query = "SELECT * FROM lich_su_giao_nhan WHERE ma_phieu=%s AND trang_thai IN ('DA_KHU_NHIEM', 'DA_DONG_GOI')"
         items = self.db.fetch_all(query, (ma_phieu,))
         
         groups = {}
@@ -106,7 +106,7 @@ class SterilizationController(QObject):
                 for it in items:
                     req_id = it.get('req_id')
                     if req_id:
-                        self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai='DA_KHU_NHIEM' WHERE id=%s", (req_id,))
+                        self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai IN ('DA_KHU_NHIEM', 'DA_DONG_GOI') WHERE id=%s", (req_id,))
                         
             self.db.execute("UPDATE machines SET status='READY', end_time=NULL, loaded_items_json=NULL WHERE id=%s", (mac['id'],))
             now = datetime.now()

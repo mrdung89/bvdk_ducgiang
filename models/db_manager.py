@@ -417,6 +417,18 @@ class DBManager:
         sql = "SELECT id, ten_bo, ma_qr FROM bo_dung_cu WHERE ten_bo LIKE %s OR ten_bo_chuan_hoa LIKE %s LIMIT 10"
         return self.fetch_all(sql, (f"%{keyword}%", f"%{kw_clean}%")) or []
 
+    def get_chart_data_7days(self, start_str, end_str):
+        # start_str might be "2026-09-09 00:00:00", we just need "2026-09-09"
+        d1 = start_str.split()[0]
+        d2 = end_str.split()[0]
+        sql = """
+            SELECT r.date as ngay, m.name as ten_may, COUNT(*) as so_me
+            FROM runs r JOIN machines m ON r.machine_id = m.id 
+            WHERE r.date BETWEEN %s AND %s
+            GROUP BY r.date, m.name ORDER BY r.date
+        """
+        return self.fetch_all(sql, (d1, d2)) or []
+        
     def get_realtime_machines(self):
         sql = """
             SELECT 

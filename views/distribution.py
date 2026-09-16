@@ -842,6 +842,15 @@ class IssuePage(QWidget):
             khoa = self.table_lb.item(row, 1).text()
             ma_dv = self.table_lb.item(row, 2).text()
             sl = int(self.table_lb.item(row, 3).text())
+            
+            original = self.db.fetch_one("SELECT so_luong FROM phieu_linh_bu WHERE id=%s", (r_id,))
+            if not original: return
+            
+            if sl < original['so_luong']:
+                reply = QMessageBox.question(self, "Thiếu đồ", f"Khoa yêu cầu {original['so_luong']} nhưng bạn chỉ duyệt {sl}. Bạn có muốn tạo phiếu NỢ (Backorder) cho {original['so_luong'] - sl} món còn thiếu không?", QMessageBox.Yes | QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.db.execute("INSERT INTO phieu_linh_bu (khoa_gui, ma_do_vai, so_luong, trang_thai) VALUES (%s, %s, %s, %s)", (khoa, ma_dv, original['so_luong'] - sl, 'CHO_DUYET'))
+                    
             self.db.approve_linh_bu(r_id, ma_dv, sl)
             self.db.execute('''INSERT INTO tu_truc_khoa (khoa, ma_do, so_luong) VALUES (%s, %s, %s) 
                                ON DUPLICATE KEY UPDATE so_luong = so_luong + %s''', (khoa, ma_dv, sl, sl))

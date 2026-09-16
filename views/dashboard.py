@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
                                QLabel, QLineEdit, QPushButton, QDateEdit, 
                                QScrollArea, QFrame)
-from PySide6.QtCore import Qt, QDate
+from PySide6.QtCore import Qt, QTimer, QDate, Signal
 from PySide6.QtGui import QFont
 import qtawesome as qta
 from views.dashboard_components import KPICard, DashboardMachineCard

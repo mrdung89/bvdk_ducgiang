@@ -176,8 +176,40 @@ class MultiItemDialog(QDialog):
         self.table_cart.setCellWidget(r, 2, qty_widget)
         
         btn_del = QPushButton("Xóa")
-        btn_del.clicked.connect(lambda ch, row=r: self.table_cart.removeRow(self.table_cart.currentRow()))
+        btn_del.clicked.connect(lambda ch, row_widget=qty_widget: self.remove_cart_row(row_widget))
         self.table_cart.setCellWidget(r, 3, btn_del)
+
+    def prefill_cart(self, items_list):
+        # items_list: list of dict {'type': 'VAI', 'code': 'A1', 'name': 'Ao', 'qty': 2}
+        for it in items_list:
+            r = self.table_cart.rowCount()
+            self.table_cart.insertRow(r)
+            
+            self.table_cart.setItem(r, 0, QTableWidgetItem(it['type']))
+            
+            it_name = QTableWidgetItem(f"{it['code']} - {it['name']}")
+            it_name.setData(Qt.UserRole, it['code'])
+            self.table_cart.setItem(r, 1, it_name)
+            
+            qty_widget = QWidget()
+            ql = QHBoxLayout(qty_widget)
+            ql.setContentsMargins(0,0,0,0)
+            sb = QSpinBox()
+            sb.setMinimum(1)
+            sb.setMaximum(999)
+            sb.setValue(it['qty'])
+            ql.addWidget(sb)
+            self.table_cart.setCellWidget(r, 2, qty_widget)
+            
+            btn_del = QPushButton("Xóa")
+            btn_del.clicked.connect(lambda ch, row_widget=qty_widget: self.remove_cart_row(row_widget))
+            self.table_cart.setCellWidget(r, 3, btn_del)
+            
+    def remove_cart_row(self, widget):
+        for i in range(self.table_cart.rowCount()):
+            if self.table_cart.cellWidget(i, 2) == widget:
+                self.table_cart.removeRow(i)
+                break
 
     def submit_all(self):
         if self.table_cart.rowCount() == 0:

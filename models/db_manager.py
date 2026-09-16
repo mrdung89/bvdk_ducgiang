@@ -234,6 +234,20 @@ class DBManager:
             self.execute("INSERT INTO phieu_cap_phat (khoa_nhan, ma_do, so_luong) VALUES (%s, %s, %s)", (khoa, ma_do, sl))
         self.execute("INSERT INTO lich_su_bien_dong (thoi_gian, nguoi_thuc_hien, bang_du_lieu, ma_item, noi_dung) VALUES (NOW(), 'KSNK', 'phieu_cap_phat', %s, %s)", (ma_do, f"Cấp phát {sl} cái cho {khoa}"))
 
+        # FIFO update lich_su_giao_nhan
+        rows = self.fetch_all("SELECT id, so_luong FROM lich_su_giao_nhan WHERE khoa_giao=%s AND ma_do=%s AND trang_thai='CHO_CAP_PHAT' ORDER BY thoi_gian ASC", (khoa, ma_do))
+        if rows:
+            sl_remain = sl
+            for r in rows:
+                if sl_remain <= 0: break
+                if r['so_luong'] <= sl_remain:
+                    self.execute("UPDATE lich_su_giao_nhan SET trang_thai='DA_CAP_PHAT' WHERE id=%s", (r['id'],))
+                    sl_remain -= r['so_luong']
+                else:
+                    self.execute("UPDATE lich_su_giao_nhan SET so_luong = so_luong - %s WHERE id=%s", (sl_remain, r['id']))
+                    self.execute("INSERT INTO lich_su_giao_nhan (khoa_giao, ma_do, so_luong, trang_thai, thoi_gian) SELECT khoa_giao, ma_do, %s, 'DA_CAP_PHAT', thoi_gian FROM lich_su_giao_nhan WHERE id=%s", (sl_remain, r['id']))
+                    sl_remain = 0
+
     def get_linh_bu(self):
         self.execute('''CREATE TABLE IF NOT EXISTS phieu_linh_bu (
             id INT AUTO_INCREMENT PRIMARY KEY, thoi_gian DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -547,6 +561,22 @@ class DBManager:
             WHERE cssd_ton_thuc_te < cssd_ton_toi_thieu AND trang_thai = 1
         """
         return self.fetch_all(sql) or []
+        
+    def get_pending_issue_items(self, khoa):
+        sql = """
+            SELECT n.ma_do as code, 
+                   IFNULL(b.ten_bo, IFNULL(v.ten_do_vai, d.ten_dc)) as name,
+                   n.so_luong as qty,
+                   CASE WHEN b.ten_bo IS NOT NULL THEN 'BỘ'
+                        WHEN v.ten_do_vai IS NOT NULL THEN 'VẢI'
+                        ELSE 'LẺ' END as type
+            FROM lich_su_giao_nhan n
+            LEFT JOIN danh_muc_bo_dung_cu b ON n.ma_do = b.ma_bo
+            LEFT JOIN danh_muc_do_vai v ON n.ma_do = v.ma_do_vai
+            LEFT JOIN danh_muc_dung_cu d ON n.ma_do = d.ma_dc
+            WHERE n.khoa_giao = %s AND n.trang_thai = 'CHO_CAP_PHAT'
+        """
+        return self.fetch_all(sql, (khoa,)) or []
         
     def get_kpi_received_drilldown(self, date_str):
         sql = """

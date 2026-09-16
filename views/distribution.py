@@ -1,7 +1,7 @@
 from utils.vietnamese_filter import remove_vietnamese_accents
 from PySide6.QtWidgets import (QComboBox, QWidget, QLineEdit, QListWidget, QVBoxLayout, QHBoxLayout, QPushButton, QDateEdit, 
                                QLabel, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QHeaderView, QTabWidget, 
-                               QMessageBox, QInputDialog, QFileDialog)
+                               QMessageBox, QInputDialog, QFileDialog, QSpinBox)
 from PySide6.QtCore import QTimer, Qt, QDate
 from models.db_manager import DBManager
 from utils.ui_helpers import get_autocomplete_input
@@ -829,13 +829,12 @@ class IssuePage(QWidget):
             QMessageBox.warning(self, "Lỗi", "Giỏ hàng trống!")
             return
             
-        target_time = self.date_edit.date().toString("yyyy-MM-dd") + " 23:59:59"
         count = 0
         for i in range(self.table_issue.rowCount()):
             code = self.table_issue.item(i, 1).text()
             qty = self.table_issue.cellWidget(i, 3).findChild(QSpinBox).value()
             if qty > 0:
-                self.db.tao_phieu_cap_phat(khoa, code, qty, thoi_gian=target_time)
+                self.db.tao_phieu_cap_phat(khoa, code, qty)
                 self.db.execute('''INSERT INTO tu_truc_khoa (khoa, ma_do, so_luong) VALUES (%s, %s, %s) 
                                    ON DUPLICATE KEY UPDATE so_luong = so_luong + %s''', (khoa, code, qty, qty))
                 count += 1

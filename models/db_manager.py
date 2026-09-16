@@ -563,7 +563,7 @@ class DBManager:
         return self.fetch_all(sql) or []
         
     def get_pending_issue_items(self, khoa):
-        # Tính tổng gửi hôm nay
+        # Tính tổng gửi
         sql_sent = """
             SELECT n.ma_do as code, 
                    IFNULL(b.ten_bo, IFNULL(v.ten_do_vai, d.ten_dc)) as name,
@@ -575,16 +575,16 @@ class DBManager:
             LEFT JOIN danh_muc_bo_dung_cu b ON n.ma_do = b.ma_bo
             LEFT JOIN danh_muc_do_vai v ON n.ma_do = v.ma_do_vai
             LEFT JOIN danh_muc_dung_cu d ON n.ma_do = d.ma_dc
-            WHERE n.khoa_giao = %s AND DATE(n.thoi_gian) = CURDATE()
+            WHERE n.khoa_giao = %s
             GROUP BY n.ma_do, name, type
         """
         sent_items = self.fetch_all(sql_sent, (khoa,)) or []
         
-        # Tính tổng đã cấp hôm nay
+        # Tính tổng đã cấp
         sql_issued = """
             SELECT ma_do, SUM(so_luong) as issued_qty 
             FROM phieu_cap_phat 
-            WHERE khoa_nhan = %s AND DATE(thoi_gian) = CURDATE()
+            WHERE khoa_nhan = %s
             GROUP BY ma_do
         """
         issued_items = self.fetch_all(sql_issued, (khoa,)) or []

@@ -680,7 +680,6 @@ class IssuePage(QWidget):
     def refresh_all(self):
         if self.role != "KHOA_LAM_SANG":
             self.load_laundry()
-            self.load_issue()
             self.load_linh_bu_ksnk()
 
     def setup_laundry_tab(self):
@@ -730,17 +729,22 @@ class IssuePage(QWidget):
             self.txt_issue_khoa.textEdited.connect(lambda t: self.timer_issue_khoa.start(500))
             self.timer_issue_khoa.timeout.connect(self.do_search_issue_khoa)
             self.list_issue_khoa.itemClicked.connect(self.select_issue_khoa)
+            self.txt_issue_khoa.returnPressed.connect(self.load_issue_cart)
             
             khoa_layout.addWidget(self.txt_issue_khoa)
             khoa_layout.addWidget(self.list_issue_khoa)
             hl.addLayout(khoa_layout)
+            
+        btn_add = QPushButton("Thêm Đồ Khác")
+        btn_add.clicked.connect(self.add_other_items)
+        hl.addWidget(btn_add)
             
         btn_issue = QPushButton("Tạo Phiếu Cấp Phát")
         btn_issue.setObjectName("PrimaryButton")
         btn_issue.clicked.connect(self.create_issue)
         hl.addWidget(btn_issue)
         
-        btn_export = QPushButton("📥 Xuất Bảng Cấp Phát (Excel)")
+        btn_export = QPushButton("Xuất Bảng Cấp Phát (Excel)")
         btn_export.setObjectName("SuccessButton")
         btn_export.clicked.connect(self.export_issue_csv)
         hl.addWidget(btn_export)
@@ -749,9 +753,67 @@ class IssuePage(QWidget):
         layout.addLayout(hl)
         
         self.table_issue = QTableWidget(0, 5)
-        self.table_issue.setHorizontalHeaderLabels(["ID Phiếu", "Thời Gian", "Khoa Nhận", "Mã Đồ", "Số Lượng"])
+        self.table_issue.setHorizontalHeaderLabels(["Loại", "Mã Đồ", "Tên Đồ", "Số Lượng", "Xóa"])
         self.table_issue.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         layout.addWidget(self.table_issue)
+
+    def load_issue_cart(self):
+        khoa = self.txt_issue_khoa.text().strip()
+        if not khoa: return
+        self.table_issue.setRowCount(0)
+        pending = self.db.get_pending_issue_items(khoa)
+        if not pending: return
+        
+        for it in pending:
+            self.add_item_to_cart(it['type'], it['code'], it['name'], it['qty'])
+            
+    def add_other_items(self):
+        khoa = self.txt_issue_khoa.text().strip()
+        if not khoa:
+            QMessageBox.warning(self, "Lỗi", "Vui lòng chọn Khoa trước!")
+            return
+        dlg = MultiItemDialog(self, f"Thêm đồ cho {khoa}", list_type="do_vai", target_khoa=khoa)
+        if dlg.exec():
+            for code, qty in dlg.items_to_submit:
+                # Need name and type? We can just query or leave blank, but better to just show code
+                info = self.db.fetch_one("SELECT ten_do_vai as n FROM danh_muc_do_vai WHERE ma_do_vai=%s", (code,))
+                name = info['n'] if info else ''
+                self.add_item_to_cart('VẢI', code, name, qty)
+                
+    def add_item_to_cart(self, typ, code, name, qty):
+        # Check if exists
+        for i in range(self.table_issue.rowCount()):
+            if self.table_issue.item(i, 1).text() == code:
+                sb = self.table_issue.cellWidget(i, 3).findChild(QSpinBox)
+                sb.setValue(sb.value() + qty)
+                return
+                
+        r = self.table_issue.rowCount()
+        self.table_issue.insertRow(r)
+        
+        self.table_issue.setItem(r, 0, QTableWidgetItem(typ))
+        self.table_issue.setItem(r, 1, QTableWidgetItem(code))
+        self.table_issue.setItem(r, 2, QTableWidgetItem(name))
+        
+        qty_widget = QWidget()
+        ql = QHBoxLayout(qty_widget)
+        ql.setContentsMargins(0,0,0,0)
+        sb = QSpinBox()
+        sb.setMinimum(1)
+        sb.setMaximum(9999)
+        sb.setValue(qty)
+        ql.addWidget(sb)
+        self.table_issue.setCellWidget(r, 3, qty_widget)
+        
+        btn_del = QPushButton("Xóa")
+        btn_del.clicked.connect(lambda ch, row_widget=qty_widget: self.remove_issue_cart_row(row_widget))
+        self.table_issue.setCellWidget(r, 4, btn_del)
+        
+    def remove_issue_cart_row(self, widget):
+        for i in range(self.table_issue.rowCount()):
+            if self.table_issue.cellWidget(i, 3) == widget:
+                self.table_issue.removeRow(i)
+                break
 
     def create_issue(self):
         if hasattr(self, 'txt_issue_khoa'):
@@ -763,19 +825,23 @@ class IssuePage(QWidget):
             khoa, ok0 = get_autocomplete_input(self, "Cấp Phát", "Chọn khoa nhận:", "khoa")
             if not ok0 or not khoa: return
         
-        dlg = MultiItemDialog(self, f"Tạo Phiếu Cấp Phát cho {khoa}", list_type="do_vai", target_khoa=khoa)
-        pending = self.db.get_pending_issue_items(khoa)
-        if pending:
-            dlg.prefill_cart(pending)
+        if self.table_issue.rowCount() == 0:
+            QMessageBox.warning(self, "Lỗi", "Giỏ hàng trống!")
+            return
             
-        if dlg.exec():
-            target_time = self.date_edit.date().toString("yyyy-MM-dd") + " 23:59:59"
-            for ma_do, sl in dlg.items_to_submit:
-                self.db.tao_phieu_cap_phat(khoa, ma_do, sl, thoi_gian=target_time)
+        target_time = self.date_edit.date().toString("yyyy-MM-dd") + " 23:59:59"
+        count = 0
+        for i in range(self.table_issue.rowCount()):
+            code = self.table_issue.item(i, 1).text()
+            qty = self.table_issue.cellWidget(i, 3).findChild(QSpinBox).value()
+            if qty > 0:
+                self.db.tao_phieu_cap_phat(khoa, code, qty, thoi_gian=target_time)
                 self.db.execute('''INSERT INTO tu_truc_khoa (khoa, ma_do, so_luong) VALUES (%s, %s, %s) 
-                                   ON DUPLICATE KEY UPDATE so_luong = so_luong + %s''', (khoa, ma_do, sl, sl))
-            QMessageBox.information(self, "OK", f"Đã tạo phiếu cấp phát gồm {len(dlg.items_to_submit)} món cho {khoa}.")
-            self.load_issue()
+                                   ON DUPLICATE KEY UPDATE so_luong = so_luong + %s''', (khoa, code, qty, qty))
+                count += 1
+                
+        QMessageBox.information(self, "OK", f"Đã tạo phiếu cấp phát gồm {count} món cho {khoa}.")
+        self.table_issue.setRowCount(0)
 
 
     def show_issue_detail(self, item):
@@ -790,17 +856,7 @@ class IssuePage(QWidget):
         except: pass
         QMessageBox.information(self, "Chi Tiết Phiếu", msg)
 
-    def load_issue(self):
-        try:
-            reqs = self.db.get_phieu_cap_phat()
-            self.table_issue.setRowCount(len(reqs))
-            for r, row in enumerate(reqs):
-                self.table_issue.setItem(r, 0, QTableWidgetItem(str(row['id'])))
-                self.table_issue.setItem(r, 1, QTableWidgetItem(str(row['thoi_gian'])))
-                self.table_issue.setItem(r, 2, QTableWidgetItem(row['khoa_nhan']))
-                self.table_issue.setItem(r, 3, QTableWidgetItem(row['ma_do']))
-                self.table_issue.setItem(r, 4, QTableWidgetItem(str(row['so_luong'])))
-        except Exception: pass
+    # load_issue history removed because the table is now a Cart
 
     def export_issue_csv(self):
         path, _ = QFileDialog.getSaveFileName(self, "Lưu danh sách cấp phát", "", "CSV Files (*.csv)")
@@ -885,3 +941,4 @@ class IssuePage(QWidget):
     def select_issue_khoa(self, item):
         self.txt_issue_khoa.setText(item.text())
         self.list_issue_khoa.hide()
+        self.load_issue_cart()

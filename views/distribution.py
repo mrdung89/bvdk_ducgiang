@@ -766,15 +766,7 @@ class IssuePage(QWidget):
         dlg = MultiItemDialog(self, f"Tạo Phiếu Cấp Phát cho {khoa}", list_type="do_vai", target_khoa=khoa)
         pending = self.db.get_pending_issue_items(khoa)
         if pending:
-            # Group by code
-            from collections import defaultdict
-            grouped = defaultdict(lambda: {'qty': 0, 'name': '', 'type': ''})
-            for p in pending:
-                grouped[p['code']]['qty'] += p['qty']
-                grouped[p['code']]['name'] = p['name']
-                grouped[p['code']]['type'] = p['type']
-            prefill_data = [{'code': k, 'name': v['name'], 'type': v['type'], 'qty': v['qty']} for k, v in grouped.items()]
-            dlg.prefill_cart(prefill_data)
+            dlg.prefill_cart(pending)
             
         if dlg.exec():
             target_time = self.date_edit.date().toString("yyyy-MM-dd") + " 23:59:59"

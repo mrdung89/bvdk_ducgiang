@@ -108,10 +108,10 @@ class SterilizationController(QObject):
                     if req_id:
                         self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai IN ('DA_KHU_NHIEM', 'DA_DONG_GOI') WHERE id=%s", (req_id,))
                         
-            self.db.execute("UPDATE machines SET status='READY', end_time=NULL, loaded_items_json=NULL WHERE id=%s", (mac['id'],))
+            self.db.execute("UPDATE machines SET status='READY', end_time=NULL, loaded_items_json=NULL, current_cycle_id=NULL WHERE id=%s", (mac['id'],))
             now = datetime.now()
-            self.db.execute("INSERT INTO runs (machine_id, date, time, status, note) VALUES (%s, %s, %s, %s, %s)",
-                            (mac['id'], now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), "CANCELLED", "Người dùng bấm Hủy"))
+            self.db.execute("INSERT INTO runs (machine_id, date, time, cycle_type_id, status, note) VALUES (%s, %s, %s, %s, %s, %s)",
+                            (mac['id'], now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), mac.get('current_cycle_id'), "CANCELLED", "Người dùng bấm Hủy"))
             payload = json.dumps({"action": "CANCEL", "machine_id": mac['id']})
             self.db.execute("INSERT INTO sync_system (event_type, payload) VALUES (%s, %s)", ("STERILIZATION_SYNC", payload))
             self.poll_db()
@@ -133,10 +133,19 @@ class SterilizationController(QObject):
             idx = cycle_names.index(chosen)
             selected_cycle = cycles[idx]
             
+            is_test = any(kw in selected_cycle['name'].lower() for kw in ['test', 'bowie', 'leak'])
+            if is_test and mac.get('loaded_items_json'):
+                QMessageBox.warning(self.view, "Cảnh báo", "Chu trình Test không được phép chứa đồ. Vui lòng bấm Hủy hoặc dọn sạch máy trước khi chạy.")
+                return
+                
+            if not is_test and not mac.get('loaded_items_json'):
+                QMessageBox.warning(self.view, "Cảnh báo", "Chu trình này yêu cầu phải nạp đồ trước khi chạy. Vui lòng bấm Xếp đồ.")
+                return
+            
             cycle_mins = int(selected_cycle.get('thoi_gian', 60))
             end_time = datetime.now() + timedelta(minutes=cycle_mins)
             
-            self.db.execute("UPDATE machines SET status='RUNNING', end_time=%s WHERE id=%s", (end_time, mac['id']))
+            self.db.execute("UPDATE machines SET status='RUNNING', end_time=%s, current_cycle_id=%s WHERE id=%s", (end_time, selected_cycle['id'], mac['id']))
             
             payload = json.dumps({"action": "START", "machine_id": mac['id']})
             self.db.execute("INSERT INTO sync_system (event_type, payload) VALUES (%s, %s)", ("STERILIZATION_SYNC", payload))
@@ -179,10 +188,10 @@ class SterilizationController(QObject):
                         if result_status == "PASS" and ma_sp:
                             self.db.execute("UPDATE danh_muc_do_vai SET cssd_ton_thuc_te = cssd_ton_thuc_te + %s WHERE ma_do_vai=%s", (sl, ma_sp))
             
-            self.db.execute("UPDATE machines SET status='READY', end_time=NULL, loaded_items_json=NULL WHERE id=%s", (mac['id'],))
+            self.db.execute("UPDATE machines SET status='READY', end_time=NULL, loaded_items_json=NULL, current_cycle_id=NULL WHERE id=%s", (mac['id'],))
             now = datetime.now()
-            self.db.execute("INSERT INTO runs (machine_id, date, time, status, note) VALUES (%s, %s, %s, %s, %s)",
-                            (mac['id'], now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), result_status, test_note))
+            self.db.execute("INSERT INTO runs (machine_id, date, time, cycle_type_id, status, note) VALUES (%s, %s, %s, %s, %s, %s)",
+                            (mac['id'], now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), mac.get('current_cycle_id'), result_status, test_note))
             
             payload = json.dumps({"action": "END", "machine_id": mac['id']})
             self.db.execute("INSERT INTO sync_system (event_type, payload) VALUES (%s, %s)", ("STERILIZATION_SYNC", payload))

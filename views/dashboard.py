@@ -12,7 +12,9 @@ class FlowLayout(QHBoxLayout):
         self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
 class DashboardPage(QWidget):
-    def __init__(self):
+    signal_show_alerts = Signal()
+    
+    def __init__(self, parent=None):
         super().__init__()
         self.setup_ui()
 
@@ -38,13 +40,17 @@ class DashboardPage(QWidget):
         
         self.btn_search = QPushButton("  Truy vết")
         self.btn_search.setIcon(qta.icon('fa5s.search', color='white'))
-        self.btn_search.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold; padding: 6px; border-radius: 5px;")
+        self.btn_search.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold; padding: 8px 15px; border-radius: 4px;")
+        
+        self.btn_alerts = QPushButton("  Cảnh Báo")
+        self.btn_alerts.setIcon(qta.icon('fa5s.exclamation-triangle', color='white'))
+        self.btn_alerts.setStyleSheet("background-color: #c0392b; color: white; font-weight: bold; padding: 8px 15px; border-radius: 4px;")
         
         header_layout.addWidget(lbl_date)
         header_layout.addWidget(self.date_edit)
-        header_layout.addSpacing(30)
         header_layout.addWidget(self.txt_search, stretch=1)
         header_layout.addWidget(self.btn_search)
+        header_layout.addWidget(self.btn_alerts)
         
         main_layout.addLayout(header_layout)
 

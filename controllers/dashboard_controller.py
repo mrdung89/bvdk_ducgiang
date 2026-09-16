@@ -32,6 +32,8 @@ class DashboardController(QObject):
         self.view.card_chay.clicked.connect(self.show_drilldown_chay)
         self.view.card_kho.clicked.connect(self.show_drilldown_kho)
         
+        self.view.signal_show_alerts.connect(self.show_alerts)
+        
         self.update_kpi_signal.connect(self.on_kpi_updated)
         self.update_machines_signal.connect(self.on_machines_updated)
         self.update_chart_signal.connect(self.on_chart_updated)
@@ -121,6 +123,14 @@ class DashboardController(QObject):
         self.view.chart_layout.addWidget(canvas)
 
     # --- Drill downs ---
+    def show_alerts(self):
+        expiries = self.db.get_expiry_alerts()
+        min_stocks = self.db.get_min_stock_alerts()
+        
+        from views.alerts_dialog import AlertsDialog
+        dlg = AlertsDialog(expiries, min_stocks, self.view)
+        dlg.exec()
+
     def show_drilldown_nhan(self):
         date_str = self.view.date_edit.date().toString("yyyy-MM-dd")
         items = self.db.get_kpi_received_drilldown(date_str)

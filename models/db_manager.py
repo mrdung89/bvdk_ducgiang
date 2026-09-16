@@ -516,6 +516,38 @@ class DBManager:
             
         return hap_map, cap_map
 
+    def get_expiry_alerts(self):
+        # Scan CHO_CAP_PHAT items, find expiry date
+        sql = """
+            SELECT n.khoa_giao as khoa, n.ma_do as ten, n.trang_thai, n.thoi_gian as ngay_hap,
+                   IFNULL(b.han_tiet_khuan, IFNULL(v.han_tiet_khuan, 30)) as han
+            FROM lich_su_giao_nhan n
+            LEFT JOIN danh_muc_bo_dung_cu b ON n.ma_do = b.ma_bo
+            LEFT JOIN danh_muc_do_vai v ON n.ma_do = v.ma_do_vai
+            WHERE n.trang_thai = 'CHO_CAP_PHAT'
+        """
+        rows = self.fetch_all(sql)
+        alerts = []
+        from datetime import datetime
+        now = datetime.now()
+        for r in rows:
+            if not r['ngay_hap']: continue
+            # Calculate days left
+            delta = (now - r['ngay_hap']).days
+            days_left = r['han'] - delta
+            if days_left <= 3:
+                r['days_left'] = days_left
+                alerts.append(r)
+        return alerts
+        
+    def get_min_stock_alerts(self):
+        sql = """
+            SELECT ma_do_vai, ten_do_vai, cssd_ton_thuc_te, cssd_ton_toi_thieu 
+            FROM danh_muc_do_vai 
+            WHERE cssd_ton_thuc_te < cssd_ton_toi_thieu AND trang_thai = 1
+        """
+        return self.fetch_all(sql) or []
+        
     def get_kpi_received_drilldown(self, date_str):
         sql = """
             SELECT khoa_giao as khoa, ma_do as ten, so_luong, trang_thai, thoi_gian, ma_phieu 

@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QMessageBox, QInputDialog, QDialog, QFormLayout, QLineEdit, QComboBox, QSpinBox, QCheckBox)
 from PySide6.QtCore import Qt
 from models.db_manager import DBManager
+from views.user_management import UserManagementWidget
 
 class EditDialog(QDialog):
     def __init__(self, title, fields, parent=None):

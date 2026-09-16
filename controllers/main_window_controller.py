@@ -89,6 +89,8 @@ class MainWindowController(QObject):
         self.page_management = ManagementPage()
         self.view.add_page(self.page_management)
         self.idx_management = self.view.content_area.indexOf(self.page_management)
+        if hasattr(self.page_management, "set_user_data"):
+            self.page_management.set_user_data(self.user_data)
 
         # Settings
         self.page_settings = SettingsPage(self.user_data)

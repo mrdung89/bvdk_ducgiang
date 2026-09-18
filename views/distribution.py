@@ -660,10 +660,6 @@ class IssuePage(QWidget):
         self.tabs = QTabWidget()
         
         if self.role != "KHOA_LAM_SANG":
-            self.tab_laundry = QWidget()
-            self.setup_laundry_tab()
-            self.tabs.addTab(self.tab_laundry, "B2. Giặt Là")
-            
             self.tab_issue = QWidget()
             self.setup_issue_tab()
             self.tabs.addTab(self.tab_issue, "B3. Cấp Phát (Xuất Phiếu)")
@@ -679,35 +675,7 @@ class IssuePage(QWidget):
 
     def refresh_all(self):
         if self.role != "KHOA_LAM_SANG":
-            self.load_laundry()
             self.load_linh_bu_ksnk()
-
-    def setup_laundry_tab(self):
-        layout = QVBoxLayout(self.tab_laundry)
-        self.table_laundry = QTableWidget(0, 5)
-        self.table_laundry.setHorizontalHeaderLabels(["ID", "Khoa Gửi", "Mã Đồ", "SL", "Hành Động"])
-        self.table_laundry.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        layout.addWidget(self.table_laundry)
-
-    def load_laundry(self):
-        try:
-            reqs = self.db.get_laundry_items()
-            self.table_laundry.setRowCount(len(reqs))
-            for r, row in enumerate(reqs):
-                self.table_laundry.setItem(r, 0, QTableWidgetItem(str(row['id'])))
-                self.table_laundry.setItem(r, 1, QTableWidgetItem(row['khoa_giao']))
-                self.table_laundry.setItem(r, 2, QTableWidgetItem(row['ma_do']))
-                self.table_laundry.setItem(r, 3, QTableWidgetItem(str(row['so_luong'])))
-                
-                btn_done = QPushButton("✅ Hoàn Tất Giặt (Cộng Kho Sạch)")
-                btn_done.setObjectName("SuccessButton")
-                btn_done.clicked.connect(lambda ch, req_id=row['id'], ma=row['ma_do'], sl=row['so_luong']: self.finish_laundry(req_id, ma, sl))
-                self.table_laundry.setCellWidget(r, 4, btn_done)
-        except Exception: pass
-
-    def finish_laundry(self, req_id, ma, sl):
-        self.db.complete_laundry(req_id, ma, sl)
-        self.load_laundry()
 
     def setup_issue_tab(self):
         layout = QVBoxLayout(self.tab_issue)
@@ -781,6 +749,7 @@ class IssuePage(QWidget):
                 self.add_item_to_cart('VẢI', code, name, qty)
                 
     def add_item_to_cart(self, typ, code, name, qty):
+        qty = int(qty)
         # Check if exists
         for i in range(self.table_issue.rowCount()):
             if self.table_issue.item(i, 1).text() == code:
@@ -831,8 +800,13 @@ class IssuePage(QWidget):
             
         count = 0
         for i in range(self.table_issue.rowCount()):
-            code = self.table_issue.item(i, 1).text()
-            qty = self.table_issue.cellWidget(i, 3).findChild(QSpinBox).value()
+            code_item = self.table_issue.item(i, 1)
+            widget = self.table_issue.cellWidget(i, 3)
+            if not code_item or not widget: continue
+            code = code_item.text()
+            spinbox = widget.findChild(QSpinBox)
+            if not spinbox: continue
+            qty = spinbox.value()
             if qty > 0:
                 self.db.tao_phieu_cap_phat(khoa, code, qty)
                 self.db.execute('''INSERT INTO tu_truc_khoa (khoa, ma_do, so_luong) VALUES (%s, %s, %s) 

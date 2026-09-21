@@ -32,9 +32,6 @@ class ReceivePage(QWidget):
 
         self.tabs = QTabWidget()
         
-        from views.history_tab import HistoryTab
-        self.history_tab = HistoryTab(self.db, 'RECEIVE', self)
-        
         if self.role != "KHOA_LAM_SANG":
             # KSNK Receiving - Gets both the Approval table and the Creation form
             self.tab_multi = QWidget()
@@ -45,15 +42,12 @@ class ReceivePage(QWidget):
             self.setup_ward_send_tab()
             self.tabs.addTab(self.tab_ward_send, "Tạo Phiếu Giao Nhận Tại Chỗ")
             
-            self.tabs.addTab(self.history_tab, "Lịch Sử Giao Nhận")
             # Google Form sync timer & button setup will be inside setup_multi_tab
         else:
             # Wards see only their creation and history tabs
             self.tab_ward_send = QWidget()
             self.setup_ward_send_tab()
             self.tabs.addTab(self.tab_ward_send, "1. Tạo Phiếu Giao Nhận")
-            
-            self.tabs.addTab(self.history_tab, "Lịch Sử Gửi")
             
             self.tab_ward_nhan = QWidget()
             self.setup_ward_nhan_tab()
@@ -82,7 +76,7 @@ class ReceivePage(QWidget):
 
     def on_date_changed(self):
         target_date_str = self.date_edit.date().toString("yyyy-MM-dd")
-        self.history_tab.load_data(target_date_str)
+        pass
 
     def refresh_all(self):
         if self.role != "KHOA_LAM_SANG":
@@ -97,14 +91,27 @@ class ReceivePage(QWidget):
     def setup_multi_tab(self):
         layout = QVBoxLayout(self.tab_multi)
         
-        # Sync bar
-        sync_layout = QHBoxLayout()
-        self.btn_sync = QPushButton(" Đồng bộ Google Form (Giao Nhận)")
+        # Thanh công cụ: Sync + 2 Nút Lịch sử
+        top_bar = QHBoxLayout()
+        
+        self.btn_sync = QPushButton("Đồng bộ Google Form")
         self.btn_sync.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 8px;")
         self.btn_sync.clicked.connect(self.sync_google_form)
-        sync_layout.addWidget(self.btn_sync)
-        sync_layout.addStretch()
-        layout.addLayout(sync_layout)
+        top_bar.addWidget(self.btn_sync)
+        
+        top_bar.addStretch()
+        
+        self.btn_hist_gui = QPushButton("🕒 Lịch Sử Khoa Gửi")
+        self.btn_hist_gui.setStyleSheet("background-color: #f39c12; color: white; font-weight: bold; padding: 8px;")
+        self.btn_hist_gui.clicked.connect(lambda: self.show_daily_history('GUI'))
+        top_bar.addWidget(self.btn_hist_gui)
+        
+        self.btn_hist_duyet = QPushButton("✅ Lịch Sử KSNK Duyệt")
+        self.btn_hist_duyet.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 8px;")
+        self.btn_hist_duyet.clicked.connect(lambda: self.show_daily_history('DUYET'))
+        top_bar.addWidget(self.btn_hist_duyet)
+        
+        layout.addLayout(top_bar)
         
         self.tree_multi = QTreeWidget()
         self.tree_multi.setHeaderLabels(["Khoa / Loại / Mã Đồ", "SL Dơ", "Tiếp Nhận", "Từ Chối"])
@@ -114,6 +121,13 @@ class ReceivePage(QWidget):
         self.tree_multi.setColumnWidth(3, 200)
         self.tree_multi.itemDoubleClicked.connect(self.show_receive_detail)
         layout.addWidget(self.tree_multi)
+
+    def show_daily_history(self, mode):
+        from views.daily_history_dialog import DailyHistoryDialog
+        date_str = self.date_edit.date().toString("yyyy-MM-dd")
+        dlg = DailyHistoryDialog(self, self.db, mode, date_str)
+        dlg.exec()
+        self.load_multi_client()
 
     def sync_google_form(self):
         import pandas as pd
@@ -685,15 +699,10 @@ class IssuePage(QWidget):
         
         self.tabs = QTabWidget()
         
-        from views.history_tab import HistoryTab
-        self.history_tab = HistoryTab(self.db, 'ISSUE', self)
-        
         if self.role != "KHOA_LAM_SANG":
             self.tab_issue = QWidget()
             self.setup_issue_tab()
             self.tabs.addTab(self.tab_issue, "B3. Cấp Phát (Xuất Phiếu)")
-            
-            self.tabs.addTab(self.history_tab, "Lịch Sử Cấp Phát")
             
             self.tab_linh_bu = QWidget()
             self.setup_linh_bu_tab_ksnk()
@@ -709,8 +718,7 @@ class IssuePage(QWidget):
             self.timer.start(3000)
 
     def on_date_changed(self):
-        target_date_str = self.date_edit.date().toString("yyyy-MM-dd")
-        self.history_tab.load_data(target_date_str)
+        pass
 
     def refresh_all(self):
         if self.role != "KHOA_LAM_SANG":
@@ -755,6 +763,11 @@ class IssuePage(QWidget):
         btn_export.setObjectName("SuccessButton")
         btn_export.clicked.connect(self.export_issue_csv)
         hl.addWidget(btn_export)
+        
+        btn_hist_phat = QPushButton("🕒 Lịch Sử Cấp Phát")
+        btn_hist_phat.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 8px;")
+        btn_hist_phat.clicked.connect(self.show_issue_history)
+        hl.addWidget(btn_hist_phat)
         
         hl.addStretch()
         layout.addLayout(hl)
@@ -911,6 +924,12 @@ class IssuePage(QWidget):
         from utils.excel_reporter import ExcelReporter
         reporter = ExcelReporter(parent_view=self)
         reporter.create_distribution_receipt(khoa_nhan, ma_phieu, thoi_gian, data_list, nguoi_lap)
+
+    def show_issue_history(self):
+        from views.daily_history_dialog import DailyHistoryDialog
+        date_str = self.date_edit.date().toString("yyyy-MM-dd")
+        dlg = DailyHistoryDialog(self, self.db, 'CAP_PHAT', date_str)
+        dlg.exec()
 
     def setup_linh_bu_tab_ksnk(self):
         layout = QVBoxLayout(self.tab_linh_bu)

@@ -232,11 +232,18 @@ class DBManager:
             from datetime import datetime
             ma_phieu = f"CP-{datetime.now().strftime('%y%m%d%H%M')}"
             
-        if thoi_gian:
-            self.execute("INSERT INTO phieu_cap_phat (khoa_nhan, ma_do, so_luong, thoi_gian, ma_phieu) VALUES (%s, %s, %s, %s, %s)", (khoa, ma_do, sl, thoi_gian, ma_phieu))
-        else:
-            self.execute("INSERT INTO phieu_cap_phat (khoa_nhan, ma_do, so_luong, ma_phieu) VALUES (%s, %s, %s, %s)", (khoa, ma_do, sl, ma_phieu))
-        self.execute("INSERT INTO lich_su_bien_dong (thoi_gian, nguoi_thuc_hien, bang_du_lieu, ma_item, noi_dung) VALUES (NOW(), 'KSNK', 'phieu_cap_phat', %s, %s)", (ma_do, f"Cấp phát {sl} cái cho {khoa}"))
+        # Đảm bảo có header phieu_cap_phat
+        existing = self.fetch_one("SELECT ma_phieu FROM phieu_cap_phat WHERE ma_phieu=%s", (ma_phieu,))
+        if not existing:
+            if thoi_gian:
+                self.execute("INSERT INTO phieu_cap_phat (ma_phieu, thoi_gian, khoa_nhan) VALUES (%s, %s, %s)", (ma_phieu, thoi_gian, khoa))
+            else:
+                self.execute("INSERT INTO phieu_cap_phat (ma_phieu, khoa_nhan) VALUES (%s, %s)", (ma_phieu, khoa))
+                
+        # Insert detail
+        self.execute("INSERT INTO chi_tiet_cap_phat (ma_phieu, ma_do, so_luong) VALUES (%s, %s, %s)", (ma_phieu, ma_do, sl))
+        
+        self.execute("INSERT INTO lich_su_bien_dong (thoi_gian, nguoi_thuc_hien, bang_du_lieu, ma_item, noi_dung) VALUES (NOW(), 'KSNK', 'chi_tiet_cap_phat', %s, %s)", (ma_do, f"Cấp phát {sl} cái cho {khoa} (Phiếu {ma_phieu})"))
 
         # FIFO update lich_su_giao_nhan
         rows = self.fetch_all("SELECT id, so_luong FROM lich_su_giao_nhan WHERE khoa_giao=%s AND ma_do=%s AND trang_thai='CHO_CAP_PHAT' ORDER BY thoi_gian ASC", (khoa, ma_do))

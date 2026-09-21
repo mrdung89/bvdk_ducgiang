@@ -833,19 +833,40 @@ class IssuePage(QWidget):
     # load_issue history removed because the table is now a Cart
 
     def export_issue_csv(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Lưu danh sách cấp phát", "", "CSV Files (*.csv)")
-        if path:
-            try:
-                with open(path, 'w', newline='', encoding='utf-8-sig') as f:
-                    writer = csv.writer(f)
-                    headers = [self.table_issue.horizontalHeaderItem(i).text() for i in range(self.table_issue.columnCount())]
-                    writer.writerow(headers)
-                    for row in range(self.table_issue.rowCount()):
-                        row_data = [self.table_issue.item(row, col).text() if self.table_issue.item(row, col) else "" for col in range(self.table_issue.columnCount())]
-                        writer.writerow(row_data)
-                QMessageBox.information(self, "Thành công", f"Đã lưu bảng cấp phát ra Excel:\n{path}")
-            except Exception as e:
-                QMessageBox.critical(self, "Lỗi", str(e))
+        # 1. Trích xuất dữ liệu từ giỏ hàng (bảng table_issue)
+        if self.table_issue.rowCount() == 0:
+            QMessageBox.warning(self, "Lỗi", "Giỏ hàng đang trống, không có dữ liệu để xuất!")
+            return
+            
+        khoa_nhan = self.txt_issue_khoa.text().strip() if hasattr(self, 'txt_issue_khoa') else "Khoa Khách"
+        ma_phieu = f"CP-{datetime.now().strftime('%y%m%d%H%M')}"
+        thoi_gian = datetime.now().strftime("%d/%m/%Y %H:%M")
+        nguoi_lap = self.parent_page.user_data.get("full_name", "NV KSNK") if hasattr(self, 'parent_page') else "NV KSNK"
+        
+        data_list = []
+        for row in range(self.table_issue.rowCount()):
+            # table_issue: ["Loại", "Mã Đồ", "Tên Đồ", "Số Lượng", "Xóa"]
+            ma_do = self.table_issue.item(row, 1).text() if self.table_issue.item(row, 1) else ""
+            ten_do = self.table_issue.item(row, 2).text() if self.table_issue.item(row, 2) else ""
+            
+            # Số lượng nằm trong QSpinBox
+            widget = self.table_issue.cellWidget(row, 3)
+            so_luong = 0
+            if widget:
+                spinbox = widget.findChild(QSpinBox)
+                if spinbox: so_luong = spinbox.value()
+                
+            data_list.append({
+                "ma_do": ma_do,
+                "ten_do": ten_do,
+                "so_luong": so_luong,
+                "ghi_chu": ""
+            })
+            
+        # 2. Gọi công cụ xuất Excel
+        from utils.excel_reporter import ExcelReporter
+        reporter = ExcelReporter(parent_view=self)
+        reporter.create_distribution_receipt(khoa_nhan, ma_phieu, thoi_gian, data_list, nguoi_lap)
 
     def setup_linh_bu_tab_ksnk(self):
         layout = QVBoxLayout(self.tab_linh_bu)

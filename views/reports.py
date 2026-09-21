@@ -233,23 +233,20 @@ class ReportsPage(QWidget):
         except Exception: pass
 
     def export_csv(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Lưu báo cáo", "", "CSV Files (*.csv)")
-        if path:
-            try:
-                import csv
-                # Thêm errors='ignore' để chống lỗi Unicode
-                with open(path, 'w', newline='', encoding='utf-8-sig', errors='ignore') as f:
-                    writer = csv.writer(f)
-                    # Header
-                    headers = [self.table_log.horizontalHeaderItem(i).text() for i in range(self.table_log.columnCount())]
-                    writer.writerow(headers)
-                    # Data
-                    for row in range(self.table_log.rowCount()):
-                        row_data = []
-                        for col in range(self.table_log.columnCount()):
-                            item = self.table_log.item(row, col)
-                            row_data.append(item.text() if item else "")
-                        writer.writerow(row_data)
-                QMessageBox.information(self, "Thành công", f"Đã xuất file báo cáo tới:\n{path}")
-            except Exception as e:
-                QMessageBox.critical(self, "Lỗi", f"Không thể xuất file: {str(e)}")
+        if self.table_log.rowCount() == 0:
+            QMessageBox.warning(self, "Lỗi", "Không có dữ liệu để xuất!")
+            return
+            
+        data_list = []
+        for row in range(self.table_log.rowCount()):
+            data_list.append({
+                'id': self.table_log.item(row, 0).text() if self.table_log.item(row, 0) else "",
+                'thoi_gian': self.table_log.item(row, 1).text() if self.table_log.item(row, 1) else "",
+                'nguoi_thuc_hien': self.table_log.item(row, 2).text() if self.table_log.item(row, 2) else "",
+                'bang_ma': f"{self.table_log.item(row, 3).text() if self.table_log.item(row, 3) else ''} / {self.table_log.item(row, 4).text() if self.table_log.item(row, 4) else ''}",
+                'noi_dung': self.table_log.item(row, 5).text() if self.table_log.item(row, 5) else ""
+            })
+            
+        from utils.excel_reporter import ExcelReporter
+        reporter = ExcelReporter(parent_view=self)
+        reporter.create_audit_log_report(data_list)

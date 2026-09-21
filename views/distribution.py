@@ -32,6 +32,9 @@ class ReceivePage(QWidget):
 
         self.tabs = QTabWidget()
         
+        from views.history_tab import HistoryTab
+        self.history_tab = HistoryTab(self.db, 'RECEIVE', self)
+        
         if self.role != "KHOA_LAM_SANG":
             # KSNK Receiving - Gets both the Approval table and the Creation form
             self.tab_multi = QWidget()
@@ -42,12 +45,15 @@ class ReceivePage(QWidget):
             self.setup_ward_send_tab()
             self.tabs.addTab(self.tab_ward_send, "Tạo Phiếu Giao Nhận Tại Chỗ")
             
+            self.tabs.addTab(self.history_tab, "Lịch Sử Giao Nhận")
             # Google Form sync timer & button setup will be inside setup_multi_tab
         else:
             # Wards see only their creation and history tabs
             self.tab_ward_send = QWidget()
             self.setup_ward_send_tab()
             self.tabs.addTab(self.tab_ward_send, "1. Tạo Phiếu Giao Nhận")
+            
+            self.tabs.addTab(self.history_tab, "Lịch Sử Gửi")
             
             self.tab_ward_nhan = QWidget()
             self.setup_ward_nhan_tab()
@@ -66,9 +72,17 @@ class ReceivePage(QWidget):
             self.tabs.addTab(self.tab_ward_inv, "5. Tủ Trực Khoa")
             
         layout.addWidget(self.tabs)
+        
+        self.date_edit.dateChanged.connect(self.on_date_changed)
+        self.on_date_changed()
+        
         self.timer = QTimer()
         self.timer.timeout.connect(self.refresh_all)
         self.timer.start(3000)
+
+    def on_date_changed(self):
+        target_date_str = self.date_edit.date().toString("yyyy-MM-dd")
+        self.history_tab.load_data(target_date_str)
 
     def refresh_all(self):
         if self.role != "KHOA_LAM_SANG":
@@ -657,21 +671,46 @@ class IssuePage(QWidget):
         
         self.db = DBManager()
         layout = QVBoxLayout(self)
+        
+        # --- Date Picker ---
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(QLabel("Ngày làm việc:"))
+        self.date_edit = QDateEdit()
+        self.date_edit.setCalendarPopup(True)
+        self.date_edit.setDate(QDate.currentDate())
+        top_layout.addWidget(self.date_edit)
+        top_layout.addStretch()
+        layout.addLayout(top_layout)
+        # -------------------
+        
         self.tabs = QTabWidget()
+        
+        from views.history_tab import HistoryTab
+        self.history_tab = HistoryTab(self.db, 'ISSUE', self)
         
         if self.role != "KHOA_LAM_SANG":
             self.tab_issue = QWidget()
             self.setup_issue_tab()
             self.tabs.addTab(self.tab_issue, "B3. Cấp Phát (Xuất Phiếu)")
             
+            self.tabs.addTab(self.history_tab, "Lịch Sử Cấp Phát")
+            
             self.tab_linh_bu = QWidget()
             self.setup_linh_bu_tab_ksnk()
             self.tabs.addTab(self.tab_linh_bu, "Duyệt Lĩnh Bù")
             
             layout.addWidget(self.tabs)
+            
+            self.date_edit.dateChanged.connect(self.on_date_changed)
+            self.on_date_changed()
+            
             self.timer = QTimer()
             self.timer.timeout.connect(self.refresh_all)
             self.timer.start(3000)
+
+    def on_date_changed(self):
+        target_date_str = self.date_edit.date().toString("yyyy-MM-dd")
+        self.history_tab.load_data(target_date_str)
 
     def refresh_all(self):
         if self.role != "KHOA_LAM_SANG":
@@ -799,6 +838,8 @@ class IssuePage(QWidget):
             QMessageBox.warning(self, "Lỗi", "Giỏ hàng trống!")
             return
             
+        from datetime import datetime
+        ma_phieu = f"CP-{datetime.now().strftime('%y%m%d%H%M')}"
         count = 0
         for i in range(self.table_issue.rowCount()):
             code_item = self.table_issue.item(i, 1)
@@ -809,12 +850,15 @@ class IssuePage(QWidget):
             if not spinbox: continue
             qty = spinbox.value()
             if qty > 0:
-                self.db.tao_phieu_cap_phat(khoa, code, qty)
+                self.db.tao_phieu_cap_phat(khoa, code, qty, ma_phieu=ma_phieu)
                 self.db.execute('''INSERT INTO tu_truc_khoa (khoa, ma_do, so_luong) VALUES (%s, %s, %s) 
                                    ON DUPLICATE KEY UPDATE so_luong = so_luong + %s''', (khoa, code, qty, qty))
                 count += 1
                 
-        QMessageBox.information(self, "OK", f"Đã tạo phiếu cấp phát gồm {count} món cho {khoa}.")
+        if count > 0:
+            QMessageBox.information(self, "Thành công", f"Đã cấp phát {count} mặt hàng!\nMã phiếu: {ma_phieu}")
+            if hasattr(self, 'txt_issue_khoa'):
+                self.txt_issue_khoa.clear()
         self.table_issue.setRowCount(0)
 
 

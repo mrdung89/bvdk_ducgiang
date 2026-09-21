@@ -224,14 +224,18 @@ class DBManager:
             khoa_nhan VARCHAR(100), ma_do VARCHAR(100), so_luong INT)''')
         return self.fetch_all("SELECT * FROM phieu_cap_phat ORDER BY thoi_gian DESC")
 
-    def tao_phieu_cap_phat(self, khoa, ma_do, sl, thoi_gian=None):
+    def tao_phieu_cap_phat(self, khoa, ma_do, sl, thoi_gian=None, ma_phieu=None):
         # Trừ tồn kho sạch
         self.execute("UPDATE danh_muc_do_vai SET cssd_ton_thuc_te = cssd_ton_thuc_te - %s WHERE ma_do_vai=%s", (sl, ma_do))
         # Tạo phiếu
+        if not ma_phieu:
+            from datetime import datetime
+            ma_phieu = f"CP-{datetime.now().strftime('%y%m%d%H%M')}"
+            
         if thoi_gian:
-            self.execute("INSERT INTO phieu_cap_phat (khoa_nhan, ma_do, so_luong, thoi_gian) VALUES (%s, %s, %s, %s)", (khoa, ma_do, sl, thoi_gian))
+            self.execute("INSERT INTO phieu_cap_phat (khoa_nhan, ma_do, so_luong, thoi_gian, ma_phieu) VALUES (%s, %s, %s, %s, %s)", (khoa, ma_do, sl, thoi_gian, ma_phieu))
         else:
-            self.execute("INSERT INTO phieu_cap_phat (khoa_nhan, ma_do, so_luong) VALUES (%s, %s, %s)", (khoa, ma_do, sl))
+            self.execute("INSERT INTO phieu_cap_phat (khoa_nhan, ma_do, so_luong, ma_phieu) VALUES (%s, %s, %s, %s)", (khoa, ma_do, sl, ma_phieu))
         self.execute("INSERT INTO lich_su_bien_dong (thoi_gian, nguoi_thuc_hien, bang_du_lieu, ma_item, noi_dung) VALUES (NOW(), 'KSNK', 'phieu_cap_phat', %s, %s)", (ma_do, f"Cấp phát {sl} cái cho {khoa}"))
 
         # FIFO update lich_su_giao_nhan

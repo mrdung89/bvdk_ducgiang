@@ -99,6 +99,9 @@ class ManagementPage(QWidget):
         self.setup_may_tab()
         self.tabs.addTab(self.tab_may, "Máy Móc")
 
+        from views.user_management import UserManagementWidget
+        self.tab_users = UserManagementWidget(self.db)
+        self.tabs.addTab(self.tab_users, "Quản Lý User & Phân Quyền")
         
         layout.addWidget(self.tabs)
         self.refresh_all()

@@ -656,3 +656,28 @@ class DBManager:
 
     def delete_link(self, link_id):
         return self.execute("DELETE FROM danh_muc_link WHERE id=%s", (link_id,))
+    def setup_user_management(self):
+        """Äáº£m báº£o báº£ng employees cÃ³ Ä‘á»§ cÃ¡c cá»™t phÃ¢n quyá»n"""
+        try:
+            self.execute("ALTER TABLE employees ADD COLUMN is_active TINYINT DEFAULT 1")
+        except: pass
+        try:
+            self.execute("ALTER TABLE employees ADD COLUMN can_send TINYINT DEFAULT 1")
+        except: pass
+        try:
+            self.execute("ALTER TABLE employees ADD COLUMN screen_permissions TEXT")
+        except: pass
+
+    def get_all_users(self):
+        self.setup_user_management()
+        sql = """
+            SELECT e.id, e.username, e.full_name, e.role, e.is_active, e.can_send, e.screen_permissions, k.ten_khoa 
+            FROM employees e 
+            LEFT JOIN danh_muc_khoa k ON e.khoa_id = k.id 
+            ORDER BY e.role, e.username
+        """
+        return self.fetch_all(sql)
+
+    def update_user_permissions(self, user_id, is_active, can_send, perms_json):
+        sql = "UPDATE employees SET is_active=%s, can_send=%s, screen_permissions=%s WHERE id=%s"
+        return self.execute(sql, (is_active, can_send, perms_json, user_id))

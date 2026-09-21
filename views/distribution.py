@@ -492,6 +492,13 @@ class ReceivePage(QWidget):
             
         btn_send = QPushButton("Tạo Phiếu Giao Nhận")
         btn_send.setObjectName("DangerButton")
+        
+        # Kiểm tra quyền gửi đồ của Khoa
+        if self.role == "KHOA_LAM_SANG" and not int(self.user_data.get('can_send', 1)):
+            btn_send.setEnabled(False)
+            btn_send.setText("Bị Khóa Chức Năng Gửi")
+            btn_send.setStyleSheet("background-color: gray; color: white; font-weight: bold;")
+            
         btn_send.clicked.connect(self.client_send_dirty)
         top_h.addWidget(btn_send)
         top_h.addStretch()

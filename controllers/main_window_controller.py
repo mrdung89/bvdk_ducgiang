@@ -130,6 +130,31 @@ class MainWindowController(QObject):
             v.btn_management.clicked.connect(lambda: v.switch_page(self.idx_management, v.btn_management))
         if hasattr(v, 'btn_settings') and v.btn_settings:
             v.btn_settings.clicked.connect(lambda: v.switch_page(self.idx_settings, v.btn_settings))
+            
+        # ÁP DỤNG PHÂN QUYỀN MÀN HÌNH CHO KSNK
+        perms_str = self.user_data.get('screen_permissions', '')
+        if self.role != 'KHOA_LAM_SANG' and perms_str and perms_str != 'ALL':
+            import json
+            try:
+                perms = json.loads(perms_str)
+                # Helper function để ẩn nút
+                def enforce(btn_widget, perm_key):
+                    if btn_widget and not perms.get(perm_key, False):
+                        btn_widget.setVisible(False)
+                
+                enforce(getattr(v, 'btn_dashboard', None), 'dashboard')
+                enforce(getattr(v, 'btn_receive', None), 'receive')
+                enforce(getattr(v, 'btn_decon', None), 'decon')
+                enforce(getattr(v, 'btn_assembly', None), 'assembly')
+                enforce(getattr(v, 'btn_sterilize', None), 'sterilize')
+                enforce(getattr(v, 'btn_issue', None), 'issue')
+                enforce(getattr(v, 'btn_reports', None), 'reports')
+                enforce(getattr(v, 'btn_inventory', None), 'inventory')
+                enforce(getattr(v, 'btn_masterdata', None), 'masterdata')
+                enforce(getattr(v, 'btn_management', None), 'management')
+                enforce(getattr(v, 'btn_settings', None), 'settings')
+            except Exception as e:
+                print("Lỗi đọc phân quyền:", e)
 
     def on_tab_changed(self, index):
         if index == getattr(self, 'idx_decon', -1) and hasattr(self, 'controller_decon'):

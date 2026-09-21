@@ -723,6 +723,7 @@ class IssuePage(QWidget):
         self.table_issue = QTableWidget(0, 5)
         self.table_issue.setHorizontalHeaderLabels(["Loại", "Mã Đồ", "Tên Đồ", "Số Lượng", "Xóa"])
         self.table_issue.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.table_issue.setColumnHidden(1, True)
         layout.addWidget(self.table_issue)
 
     def load_issue_cart(self):

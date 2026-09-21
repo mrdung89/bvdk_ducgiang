@@ -563,11 +563,10 @@ class DBManager:
         return self.fetch_all(sql) or []
         
     def get_pending_issue_items(self, khoa):
-        # Tính tổng gửi
-        sql_sent = """
-            SELECT n.ma_do as code, 
+        # Chỉ lấy những đồ đã tiệt khuẩn xong (CHO_CAP_PHAT) thuộc về khoa này
+        sql = """
+            SELECT n.ma_do as code, n.so_luong as qty,
                    IFNULL(b.ten_bo, IFNULL(v.ten_do_vai, d.ten_dc)) as name,
-                   SUM(n.so_luong) as sent_qty,
                    CASE WHEN b.ten_bo IS NOT NULL THEN 'BỘ'
                         WHEN v.ten_do_vai IS NOT NULL THEN 'VẢI'
                         ELSE 'LẺ' END as type
@@ -575,32 +574,9 @@ class DBManager:
             LEFT JOIN danh_muc_bo_dung_cu b ON n.ma_do = b.ma_bo
             LEFT JOIN danh_muc_do_vai v ON n.ma_do = v.ma_do_vai
             LEFT JOIN danh_muc_dung_cu d ON n.ma_do = d.ma_dc
-            WHERE n.khoa_giao = %s
-            GROUP BY n.ma_do, name, type
+            WHERE n.khoa_giao = %s AND n.trang_thai = 'CHO_CAP_PHAT'
         """
-        sent_items = self.fetch_all(sql_sent, (khoa,)) or []
-        
-        # Tính tổng đã cấp
-        sql_issued = """
-            SELECT ma_do, SUM(so_luong) as issued_qty 
-            FROM phieu_cap_phat 
-            WHERE khoa_nhan = %s
-            GROUP BY ma_do
-        """
-        issued_items = self.fetch_all(sql_issued, (khoa,)) or []
-        issued_map = {item['ma_do']: item['issued_qty'] for item in issued_items}
-        
-        results = []
-        for s in sent_items:
-            remain = s['sent_qty'] - issued_map.get(s['code'], 0)
-            if remain > 0:
-                results.append({
-                    'code': s['code'],
-                    'name': s['name'],
-                    'qty': remain,
-                    'type': s['type']
-                })
-        return results
+        return self.fetch_all(sql, (khoa,)) or []
         
     def get_kpi_received_drilldown(self, date_str):
         sql = """

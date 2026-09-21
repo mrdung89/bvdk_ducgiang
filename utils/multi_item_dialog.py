@@ -14,7 +14,7 @@ class MultiItemDialog(QDialog):
     def __init__(self, parent, title, list_type="all", target_khoa=None):
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.resize(1000, 600)
+        self.resize(1200, 800)
         self.db = DBManager()
         self.target_khoa = target_khoa
         self.items_to_submit = []

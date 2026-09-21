@@ -1,13 +1,11 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, 
                                QComboBox, QRadioButton, QButtonGroup, QScrollArea, QFrame,
-                               QGridLayout, QSpinBox, QMessageBox, QLineEdit)
+                               QGridLayout, QSpinBox, QMessageBox, QLineEdit, QCheckBox)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
 from models.db_manager import DBManager
 import utils.intem_backend as backend
 from datetime import datetime, timedelta
-import math
-import os
 
 class AssemblyPage(QWidget):
     def __init__(self, user_data=None):
@@ -27,88 +25,56 @@ class AssemblyPage(QWidget):
         layout = QVBoxLayout(self)
         
         # Header
-        header = QLabel("IN TEM TỰ ĐỘNG (THAY THẾ ĐÓNG GÓI)")
+        header = QLabel("ĐÓNG GÓI & KIỂM TRA CHẤT LƯỢNG (ASSEMBLY)")
         header.setFont(QFont("Arial", 22, QFont.Bold))
+        header.setStyleSheet("color: #2c3e50;")
         layout.addWidget(header)
         
         # Filters
         fr_body = QFrame()
-        fr_body.setStyleSheet("background-color: #ecf0f1;")
+        fr_body.setStyleSheet("background-color: #ecf0f1; border-radius: 8px;")
         body_layout = QVBoxLayout(fr_body)
         
-        # Search
-        fr_qr = QHBoxLayout()
-        fr_qr.addWidget(QLabel("Quét Mã / Nhập Tên:"))
+        # Search & Dropdowns
+        fr_top = QHBoxLayout()
+        fr_top.addWidget(QLabel("Mã/Tên đồ:"))
         self.txt_search = QLineEdit()
-        self.txt_search.setPlaceholderText("Quét mã hoặc gõ mã đồ rồi Enter...")
+        self.txt_search.setPlaceholderText("Quét mã QR / Barcode...")
         self.txt_search.returnPressed.connect(self.on_scan)
-        fr_qr.addWidget(self.txt_search)
-        body_layout.addLayout(fr_qr)
+        fr_top.addWidget(self.txt_search)
         
-        # Dropdowns
-        fr_opt = QHBoxLayout()
-        fr_opt.addWidget(QLabel("Hạn:"))
+        fr_top.addWidget(QLabel("Hạn (Ngày):"))
         self.cb_h = QComboBox()
         self.cb_h.setEditable(True)
         self.cb_h.addItems(["", "7", "30", "90", "180"])
-        fr_opt.addWidget(self.cb_h)
+        fr_top.addWidget(self.cb_h)
         
-        fr_opt.addWidget(QLabel("PP:"))
+        fr_top.addWidget(QLabel("Phương pháp:"))
         self.cb_p = QComboBox()
         self.cb_p.addItems(["", "EO", "Plasma", "Hơi nước"])
-        fr_opt.addWidget(self.cb_p)
-        fr_opt.addStretch()
-        body_layout.addLayout(fr_opt)
+        fr_top.addWidget(self.cb_p)
+        body_layout.addLayout(fr_top)
         
-        # Radios
+        # Chọn Phiên chờ đóng gói
         fr_ph = QHBoxLayout()
-        fr_ph.addWidget(QLabel("Lọc:"))
-        self.radio_group = QButtonGroup()
-        
-        self.r_all = QRadioButton("Tất cả")
-        self.r_all.setChecked(True)
-        self.r_pt = QRadioButton("Phẫu thuật")
-        self.r_tt = QRadioButton("Thủ thuật")
-        
-        self.radio_group.addButton(self.r_all, 1)
-        self.radio_group.addButton(self.r_pt, 2)
-        self.radio_group.addButton(self.r_tt, 3)
-        
-        self.r_all.toggled.connect(self.refresh_session_cb)
-        self.r_pt.toggled.connect(self.refresh_session_cb)
-        self.r_tt.toggled.connect(self.refresh_session_cb)
-        
-        fr_ph.addWidget(self.r_all)
-        fr_ph.addWidget(self.r_pt)
-        fr_ph.addWidget(self.r_tt)
-        
-        fr_ph.addWidget(QLabel("Chọn Phiên:"))
+        fr_ph.addWidget(QLabel("Chọn phiên chờ Đóng gói (Đã Khử nhiễm):"))
         self.cb_ph_display = QComboBox()
         self.cb_ph_display.setMinimumWidth(300)
         fr_ph.addWidget(self.cb_ph_display)
         
-        btn_tai = QPushButton("TẢI DS")
-        btn_tai.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold;")
+        btn_tai = QPushButton("TẢI DANH SÁCH")
+        btn_tai.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 6px 15px;")
         btn_tai.clicked.connect(self.tai_ds_phien)
         fr_ph.addWidget(btn_tai)
         fr_ph.addStretch()
         body_layout.addLayout(fr_ph)
         
-        # Actions
+        # Nút đóng gói hàng loạt
         fr_act = QHBoxLayout()
-        
-        def mk_act(txt, color):
-            b = QPushButton(txt)
-            b.setStyleSheet(f"background-color: {color}; color: white; font-weight: bold; padding: 5px;")
-            b.clicked.connect(lambda: self.print_bulk(txt))
-            fr_act.addWidget(b)
-            
-        mk_act("TOÀN BỘ", "#2980b9")
-        mk_act("BỘ", "#16a085")
-        mk_act("ĐỒ LẺ", "#d35400")
-        mk_act("Hơi nước", "#27ae60")
-        mk_act("EO", "#f39c12")
-        mk_act("Plasma", "#8e44ad")
+        btn_bulk = QPushButton("ĐÓNG GÓI & IN TEM HÀNG LOẠT (Tất cả trên màn hình)")
+        btn_bulk.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 6px;")
+        btn_bulk.clicked.connect(self.pack_bulk)
+        fr_act.addWidget(btn_bulk)
         fr_act.addStretch()
         body_layout.addLayout(fr_act)
         
@@ -118,20 +84,21 @@ class AssemblyPage(QWidget):
         self.scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_content)
         self.scroll_layout.setAlignment(Qt.AlignTop)
+        self.scroll_layout.setSpacing(10)
         self.scroll.setWidget(self.scroll_content)
         body_layout.addWidget(self.scroll)
         
         # Status
         fr_b = QHBoxLayout()
         self.lbl_status = QLabel("Sẵn sàng...")
-        self.lbl_status.setStyleSheet("color: gray; font-style: italic;")
+        self.lbl_status.setStyleSheet("color: #7f8c8d; font-style: italic; font-weight: bold;")
         fr_b.addWidget(self.lbl_status)
         fr_b.addStretch()
         
-        btn_thu_cong = QPushButton("IN THỦ CÔNG")
-        btn_thu_cong.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold;")
-        fr_b.addWidget(btn_thu_cong)
+        btn_thu_cong = QPushButton("TẠO TEM THỦ CÔNG")
+        btn_thu_cong.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold; padding: 6px 15px;")
         btn_thu_cong.clicked.connect(self.show_manual_print)
+        fr_b.addWidget(btn_thu_cong)
         body_layout.addLayout(fr_b)
         
         layout.addWidget(fr_body)
@@ -141,13 +108,14 @@ class AssemblyPage(QWidget):
             self.cb_ph_display.clear()
             self.map_ma_phien.clear()
             
+            # Kéo các đồ ĐÃ KHỬ NHIỄM
             q = "SELECT ma_phieu, MAX(khoa_giao) as khoa, MAX(thoi_gian) as thoi_gian FROM lich_su_giao_nhan WHERE trang_thai='DA_KHU_NHIEM' GROUP BY ma_phieu ORDER BY thoi_gian DESC"
             rows = self.db.fetch_all(q)
             for r in rows:
                 ma = r.get('ma_phieu', '')
                 khoa = r.get('khoa', '')
                 tg = r.get('thoi_gian', '')
-                tg_str = tg.strftime('%H:%M - %d/%m') if hasattr(tg, 'strftime') else str(tg)
+                tg_str = tg.strftime('%H:%M - %d/%m') if hasattr(tg, 'strftime') else str(tg)[:16]
                 disp = f"{khoa} : {tg_str}"
                 if disp in self.map_ma_phien:
                     disp = f"{khoa} : {tg_str} ({str(ma)[-4:]})"
@@ -167,12 +135,12 @@ class AssemblyPage(QWidget):
             if ds:
                 self.render_table(ds)
             else:
-                QMessageBox.information(self, "TB", "Phiên trống hoặc đã đóng gói")
+                QMessageBox.information(self, "TB", "Phiên trống hoặc đã được đóng gói hết!")
         except Exception as e:
             print("Error tai ds:", e)
 
     def render_table(self, ds):
-        # Clear old items
+        # Xóa items cũ
         for i in reversed(range(self.scroll_layout.count())): 
             w = self.scroll_layout.itemAt(i).widget()
             if w: w.setParent(None)
@@ -184,7 +152,7 @@ class AssemblyPage(QWidget):
                 id_item = r.get('id')
                 ma_do = r.get('ma_do', '')
                 t = r.get('ten_do', '')
-                sl_tong = r.get('so_luong', 1)
+                sl_goc = r.get('so_luong', 1)
                 k_ten = r.get('khoa_giao', '')
                 
                 is_le = False
@@ -213,145 +181,142 @@ class AssemblyPage(QWidget):
                                 is_le = True
                 except: pass
                 
+                # Card giao diện cho từng món đồ
                 fr = QFrame()
-                fr.setStyleSheet("background-color: white; border: 1px solid #bdc3c7;")
-                l = QHBoxLayout(fr)
+                fr.setStyleSheet("background-color: white; border: 1px solid #bdc3c7; border-radius: 5px;")
+                v_card = QVBoxLayout(fr)
                 
-                lbl = QLabel(f"[{ma_do}] {t} (Hạn: {h} ngày - PP: {pp})")
-                lbl.setStyleSheet("border: none;")
-                l.addWidget(lbl)
+                # Hàng 1: Tên đồ
+                lbl = QLabel(f"<b>[{ma_do}] {t}</b> — (Khoa: {k_ten} | Hạn: {h} ngày | PP: {pp})")
+                lbl.setStyleSheet("border: none; font-size: 15px;")
+                v_card.addWidget(lbl)
                 
+                # Hàng 2: Controls
+                h_controls = QHBoxLayout()
+                
+                chk_qc = QCheckBox("✔ Đã kiểm tra Sạch & Sắc bén")
+                chk_qc.setStyleSheet("border: none; color: #d35400; font-weight: bold;")
+                chk_qc.setChecked(True)
+                h_controls.addWidget(chk_qc)
+                h_controls.addStretch()
+                
+                h_controls.addWidget(QLabel("SL Gói:"))
                 spin = QSpinBox()
-                spin.setRange(0, 999)
-                spin.setValue(int(sl_tong))
-                l.addWidget(spin)
+                spin.setRange(1, int(sl_goc))
+                spin.setValue(int(sl_goc))
+                spin.setStyleSheet("font-size: 16px; border: 1px solid #bdc3c7;")
+                h_controls.addWidget(spin)
                 
-                btn = QPushButton("IN")
-                btn.setStyleSheet("background-color: #3498db; color: white; border: none; padding: 5px;")
-                btn.clicked.connect(lambda ch, i=id_item, l=is_le, ten=t, kt=k_ten, hn=h, pt=pp, sp=spin, f=fr, b=btn: self.on_print_single(i, l, ten, kt, hn, pt, sp, f, b))
-                l.addWidget(btn)
+                btn = QPushButton("ĐÓNG GÓI & IN TEM")
+                btn.setStyleSheet("background-color: #27ae60; color: white; border: none; font-weight: bold; padding: 6px 12px; border-radius: 4px;")
+                btn.clicked.connect(lambda ch, i=id_item, l=is_le, ten=t, kt=k_ten, hn=h, pt=pp, sp=spin, f=fr, b=btn, qc=chk_qc, slg=sl_goc: 
+                                    self.on_pack_and_print(i, l, ten, kt, hn, pt, sp, f, b, qc, slg))
+                h_controls.addWidget(btn)
                 
+                v_card.addLayout(h_controls)
                 self.scroll_layout.addWidget(fr)
                 
                 self.list_items.append({
-                    'id': id_item, 'is_le': is_le, 'ten': t,
-                    'khoa_ten': k_ten, 'han': h, 'pp': pp, 'spin': spin, 'frame': fr, 'btn': btn, 'printed': False
+                    'id': id_item, 'is_le': is_le, 'ten': t, 'sl_goc': int(sl_goc),
+                    'khoa_ten': k_ten, 'han': h, 'pp': pp, 'spin': spin, 'chk_qc': chk_qc, 
+                    'frame': fr, 'btn': btn, 'packed': False
                 })
             except Exception as e:
                 print("Error rendering row:", e)
 
-    def on_print_single(self, i, l, ten, kt, hn, pt, sp, f, b):
-        success = self.do_print(i, l, ten, kt, hn, pt, sp.value())
-        if success:
-            f.setStyleSheet("background-color: #d4edda; border: 1px solid #c3e6cb;")
-            b.setStyleSheet("background-color: #27ae60; color: white; border: none; padding: 5px;")
-            b.setText("ĐÃ IN")
+    def on_pack_and_print(self, item_id, is_le, ten, khoa, han, pp, spin_widget, frame, btn_widget, chk_qc, sl_goc):
+        if not chk_qc.isChecked():
+            QMessageBox.warning(self, "Cảnh báo QC", f"Vui lòng xác nhận dụng cụ [{ten}] đã đạt chuẩn Sạch & Sắc bén trước khi đóng gói!")
+            return
+            
+        sl_dong_goi = spin_widget.value()
+        if sl_dong_goi <= 0: return
+        
+        # 1. Gọi hàm in tem thực tế
+        today = datetime.today()
+        user_h = self.cb_h.currentText().strip()
+        han_days = user_h if user_h.isdigit() else (han if str(han).isdigit() else 30)
+        han_date = today + timedelta(days=int(han_days))
+        pp_in = self.cb_p.currentText() if self.cb_p.currentText() else pp
+        loai_str = "thu_thuat" if str(is_le) == "thu_thuat" else ("LẺ" if is_le else "BỘ")
+        
+        try:
+            path = backend.tao_anh_tem(item_id, ten, khoa, khoa, today.strftime('%d/%m/%Y'), han_date.strftime('%d/%m/%Y'), loai_str, self.user_fullname, pp_in)
+            for _ in range(sl_dong_goi):
+                backend.thuc_hien_in(path)
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi in", f"Không thể in tem: {e}")
+            return # Dừng nếu máy in lỗi
+
+        # 2. Xử lý Database & Tách Phiếu
+        try:
+            req = self.db.fetch_one("SELECT * FROM lich_su_giao_nhan WHERE id=%s", (item_id,))
+            if req:
+                if sl_dong_goi < sl_goc:
+                    sl_con_lai = sl_goc - sl_dong_goi
+                    # Clone phiếu mới cho số thừa (giữ lại trạng thái DA_KHU_NHIEM)
+                    self.db.execute("""INSERT INTO lich_su_giao_nhan 
+                        (khoa_giao, ma_do, so_luong, trang_thai, thoi_gian, ma_phieu) 
+                        VALUES (%s, %s, %s, %s, %s, %s)""", 
+                        (req['khoa_giao'], req['ma_do'], sl_con_lai, req['trang_thai'], req['thoi_gian'], req['ma_phieu']))
+                    # Cập nhật phiếu hiện tại thành DA_DONG_GOI
+                    self.db.execute("UPDATE lich_su_giao_nhan SET so_luong=%s, trang_thai='DA_DONG_GOI' WHERE id=%s", (sl_dong_goi, item_id))
+                else:
+                    # Chọn hết thì chỉ cần update trạng thái
+                    self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai='DA_DONG_GOI' WHERE id=%s", (item_id,))
+                
+                # Ghi Audit Log
+                self.db.execute("INSERT INTO lich_su_bien_dong (thoi_gian, nguoi_thuc_hien, bang_du_lieu, ma_item, noi_dung) VALUES (NOW(), %s, %s, %s, %s)", 
+                       (self.user_fullname, 'lich_su_giao_nhan', item_id, f"Đóng gói & QC (SL: {sl_dong_goi})"))
+
+            # Update UI
+            frame.setStyleSheet("background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;")
+            btn_widget.setStyleSheet("background-color: #7f8c8d; color: white; border: none; font-weight: bold; padding: 6px;")
+            btn_widget.setText("ĐÃ ĐÓNG GÓI")
+            btn_widget.setEnabled(False)
+            spin_widget.setEnabled(False)
+            chk_qc.setEnabled(False)
+            
             for item in self.list_items:
-                if item['id'] == i:
-                    item['printed'] = True
+                if item['id'] == item_id: item['packed'] = True
+                
+            self.lbl_status.setText(f"Đã đóng gói thành công {sl_dong_goi} x [{ten}]")
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi Database", str(e))
 
     def on_scan(self):
         qr = self.txt_search.text().strip()
         if not qr: return
         self.txt_search.clear()
         
-        item_id = None
-        khoa = ""
-        loai = ""
-        
-        if qr.startswith("ID:"):
-            parts = [p.strip() for p in qr.split(",")]
-            for p in parts:
-                if p.startswith("ID:"): item_id = p.replace("ID:", "").strip()
-                elif p.startswith("KHOA:"): khoa = p.replace("KHOA:", "").strip()
-                elif p.startswith("LOAI:"): loai = p.replace("LOAI:", "").strip()
-        
-        try:
-            if loai == "LE" or loai == "THU_THUAT":
-                res = self.db.fetch_one("SELECT ten_dc, COALESCE(han_tiet_khuan, 90) as h, COALESCE(phuong_phap_tiet_khuan, 'EO') as p FROM danh_muc_dung_cu WHERE id = %s", (item_id,))
-                if res:
-                    is_le = "thu_thuat" if loai == "THU_THUAT" else True
-                    self.do_print(item_id, is_le, res['ten_dc'], khoa, res['h'], res['p'], 1)
-                    return
-            
-            is_digit = str(qr).isdigit()
-            if is_digit:
-                # id = int -> bộ dụng cụ
-                res = self.db.fetch_one("SELECT id, ten_bo, khoa_su_dung, COALESCE(han_tiet_khuan, 30) as h, COALESCE(phuong_phap_tiet_khuan, 'STEAM') as p FROM danh_muc_bo_dung_cu WHERE id=%s OR ma_bo=%s LIMIT 1", (qr, qr))
-                if res:
-                    self.do_print(res['id'], False, res['ten_bo'], res.get('khoa_su_dung', ''), res['h'], res['p'], 1)
-                    return
-                # Fallback cho đồ lẻ nếu không thấy bộ
-                res2 = self.db.fetch_one("SELECT id, ten_dc as ten_bo, '' as khoa_su_dung, COALESCE(han_tiet_khuan, 90) as h, COALESCE(phuong_phap_tiet_khuan, 'EO') as p FROM danh_muc_dung_cu WHERE id=%s OR ma_dc=%s LIMIT 1", (qr, qr))
-                if res2:
-                    self.do_print(res2['id'], True, res2['ten_bo'], '', res2['h'], res2['p'], 1)
-                    return
-            else:
-                # String -> Tìm tên bộ
-                res = self.db.fetch_one("SELECT id, ten_bo, khoa_su_dung, COALESCE(han_tiet_khuan, 30) as h, COALESCE(phuong_phap_tiet_khuan, 'STEAM') as p FROM danh_muc_bo_dung_cu WHERE LOWER(ten_bo) = LOWER(%s) LIMIT 1", (qr,))
-                if res:
-                    self.do_print(res['id'], False, res['ten_bo'], res.get('khoa_su_dung', ''), res['h'], res['p'], 1)
-                    return
+        # Nếu quét mã mà đồ nằm trên màn hình, tự động check và click
+        for item in self.list_items:
+            if not item['packed'] and str(item['id']) == qr or str(item['ten']).startswith(qr):
+                item['chk_qc'].setChecked(True)
+                item['btn'].click()
+                return
                 
-            self.lbl_status.setText(f"Không tìm thấy dữ liệu cho mã: {qr}")
-            
-        except Exception as e:
-            print("Lỗi quét QR:", e)
+        self.lbl_status.setText(f"Không tìm thấy đồ khớp với mã: {qr} trong phiên này!")
 
-    def do_print(self, item_id, is_le, t, k_ten, h_db, pp_db, n):
-        if n <= 0: return False
-        today = datetime.today()
-        user_h = self.cb_h.currentText().strip()
-        han_days = user_h if user_h.isdigit() else (h_db if str(h_db).isdigit() else 30)
-        han = today + timedelta(days=int(han_days))
-        
-        pp = self.cb_p.currentText() if self.cb_p.currentText() else pp_db
-        loai_str = "thu_thuat" if str(is_le) == "thu_thuat" else ("LẺ" if is_le else "BỘ")
-        
-        try:
-            path = backend.tao_anh_tem(item_id, t, k_ten, k_ten, today.strftime('%d/%m/%Y'), han.strftime('%d/%m/%Y'), loai_str, self.user_fullname, pp)
-            # Fetch default printer
-            for _ in range(n):
-                backend.thuc_hien_in(path)
-            
-            # Update DB to DA_DONG_GOI
-            self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai='DA_DONG_GOI' WHERE id=%s", (item_id,))
-            
-            self.lbl_status.setText(f"Đã in tem {t}")
-            return True
-        except Exception as e:
-            QMessageBox.warning(self, "Lỗi in", str(e))
-            return False
-
-    def print_bulk(self, mode):
+    def pack_bulk(self):
         c = 0
         for i in self.list_items:
-            if i.get('printed', False): continue
-            
-            n = i['spin'].value()
-            if n > 0:
-                should_print = False
-                if mode == "TOÀN BỘ": should_print = True
-                elif mode == "BỘ" and not i['is_le']: should_print = True
-                elif mode == "ĐỒ LẺ" and i['is_le']: should_print = True
-                elif i['pp'] == mode: should_print = True
-                
-                if should_print:
-                    success = self.do_print(i['id'], i['is_le'], i['ten'], i['khoa_ten'], i['han'], i['pp'], n)
-                    if success:
-                        i['printed'] = True
-                        i['frame'].setStyleSheet("background-color: #d4edda; border: 1px solid #c3e6cb;")
-                        i['btn'].setStyleSheet("background-color: #27ae60; color: white; border: none; padding: 5px;")
-                        i['btn'].setText("ĐÃ IN")
-                        c += n
-        self.lbl_status.setText(f"Đã in xong {c} tem ({mode})")
+            if i.get('packed', False): continue
+            # Tự động gán tick QC nếu bấm đóng gói hàng loạt
+            i['chk_qc'].setChecked(True)
+            i['btn'].click()
+            c += 1
+        if c > 0:
+            self.lbl_status.setText(f"Đã đóng gói hàng loạt xong!")
+            # Sau khi làm xong tự động refresh danh sách
+            self.refresh_session_cb()
 
     def show_manual_print(self):
         from PySide6.QtWidgets import QDialog
         class ManualPrintDialog(QDialog):
             def __init__(self, parent):
                 super().__init__(parent)
-                self.setWindowTitle("In Tem Thủ Công")
+                self.setWindowTitle("Tạo Tem Thủ Công")
                 self.resize(400, 300)
                 layout = QVBoxLayout(self)
                 
@@ -379,7 +344,7 @@ class AssemblyPage(QWidget):
                 self.cb_pp.addItems(["STEAM", "EO", "PLASMA"])
                 layout.addWidget(self.cb_pp)
                 
-                layout.addWidget(QLabel("Số lượng in:"))
+                layout.addWidget(QLabel("Số lượng tem:"))
                 self.t_sl = QSpinBox()
                 self.t_sl.setRange(1, 100)
                 self.t_sl.setValue(1)
@@ -399,14 +364,19 @@ class AssemblyPage(QWidget):
             pp = dlg.cb_pp.currentText()
             sl = dlg.t_sl.value()
             
-            if not ten:
-                QMessageBox.warning(self, "Lỗi", "Vui lòng nhập tên đồ cần in!")
-                return
-                
+            if not ten: return
+            
             is_le = False
             if loai == "Đồ Lẻ": is_le = True
             elif loai == "Thủ thuật": is_le = "thu_thuat"
             
-            # Use dummy ID for manual print
-            item_id = "MANUAL"
-            self.do_print(item_id, is_le, ten, khoa, han, pp, sl)
+            today = datetime.today()
+            han_date = today + timedelta(days=int(han))
+            loai_str = "thu_thuat" if str(is_le) == "thu_thuat" else ("LẺ" if is_le else "BỘ")
+            
+            try:
+                path = backend.tao_anh_tem("MANUAL", ten, khoa, khoa, today.strftime('%d/%m/%Y'), han_date.strftime('%d/%m/%Y'), loai_str, self.user_fullname, pp)
+                for _ in range(sl): backend.thuc_hien_in(path)
+                self.lbl_status.setText(f"Đã in {sl} tem thủ công: {ten}")
+            except Exception as e:
+                QMessageBox.warning(self, "Lỗi in", str(e))

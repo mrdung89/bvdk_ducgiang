@@ -58,7 +58,7 @@ class DecontaminationPage(QWidget):
         self.btn_manual_wash.setMinimumSize(150, 50)
         self.btn_manual_wash.setStyleSheet("background-color: #9b59b6; color: white; font-size: 16px; font-weight: bold; border-radius: 5px;")
         
-        self.btn_machine_wash = QPushButton("Rửa máy 🔧")
+        self.btn_machine_wash = QPushButton("Máy Rửa/Khử khuẩn 🔧")
         self.btn_machine_wash.setMinimumSize(150, 50)
         self.btn_machine_wash.setStyleSheet("background-color: #e67e22; color: white; font-size: 16px; font-weight: bold; border-radius: 5px;")
         
@@ -70,7 +70,7 @@ class DecontaminationPage(QWidget):
         
         # === Bảng trạng thái máy giặt ===
         layout.addSpacing(10)
-        lbl_wash = QLabel("🔧 Trạng thái máy giặt:")
+        lbl_wash = QLabel("🔧 Trạng thái Máy Rửa/Khử khuẩn:")
         lbl_wash.setStyleSheet("font-weight: bold; font-size: 14px; color: #e67e22;")
         layout.addWidget(lbl_wash)
         

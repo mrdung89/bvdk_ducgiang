@@ -27,7 +27,7 @@ class DecontaminationController(QObject):
         self.load_employees()
         self.load_sessions()
         
-        # Timer 5s tự refresh bảng máy giặt (đọc DB)
+        # Timer 5s tự refresh bảng Máy Rửa/Khử khuẩn (đọc DB)
         self._machine_poll_timer = QTimer()
         self._machine_poll_timer.timeout.connect(self.refresh_wash_machines_table)
         self._machine_poll_timer.start(5000)
@@ -59,7 +59,7 @@ class DecontaminationController(QObject):
             print("Error loading employees:", e)
 
     def refresh_wash_machines_table(self):
-        """Làm mới bảng máy giặt đang chạy (gọi từ DB mỗi 5s)"""
+        """Làm mới bảng Máy Rửa/Khử khuẩn đang chạy (gọi từ DB mỗi 5s)"""
         if not hasattr(self.view, 'table_wash_machines'):
             return
         try:
@@ -316,12 +316,12 @@ class DecontaminationController(QObject):
             QMessageBox.critical(self.view, "Lỗi", f"Lỗi khi lưu dữ liệu: {e}")
 
     def open_washing_machine_dialog(self):
-        """Mở dialog chọn máy giặt và chu trình"""
+        """Mở dialog chọn Máy Rửa/Khử khuẩn và chu trình"""
         try:
-            # Lấy danh sách máy giặt (group_id=1)
+            # Lấy danh sách Máy Rửa/Khử khuẩn (group_id=1)
             machines = self.db.fetch_all("SELECT * FROM machines WHERE group_id=1")
             if not machines:
-                QMessageBox.warning(self.view, "Không tìm thấy máy", "Chưa có máy giặt nào được cấu hình.")
+                QMessageBox.warning(self.view, "Không tìm thấy máy", "Chưa có Máy Rửa/Khử khuẩn nào được cấu hình.")
                 return
             
             machine_names = []
@@ -329,7 +329,7 @@ class DecontaminationController(QObject):
                 status_text = "🟢 Sẵn sàng" if m['status'] == 'READY' else f"🔴 Đang chạy (xong lúc {str(m['end_time'])[11:16]})"
                 machine_names.append(f"{m['name']} - {status_text}")
             
-            chosen_mac, ok = QInputDialog.getItem(self.view, "Chọn máy giặt", "Máy giặt:", machine_names, 0, False)
+            chosen_mac, ok = QInputDialog.getItem(self.view, "Chọn Máy Rửa/Khử khuẩn", "Máy Rửa/Khử khuẩn:", machine_names, 0, False)
             if not ok or not chosen_mac:
                 return
             
@@ -362,7 +362,7 @@ class DecontaminationController(QObject):
             QMessageBox.critical(self.view, "Lỗi", str(e))
 
     def start_washing_machine(self, mac, cycle):
-        """Bắt đầu chạy máy giặt, lưu item vào máy, đếm ngược"""
+        """Bắt đầu chạy Máy Rửa/Khử khuẩn, lưu item vào máy, đếm ngược"""
         nguoi_thuc_hien = self.view.cb_employee.currentText()
         
         try:

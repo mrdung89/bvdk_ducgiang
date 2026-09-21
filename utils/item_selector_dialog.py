@@ -12,7 +12,7 @@ class ItemSelectorDialog(QDialog):
         self.existing_ma = existing_ma or []
         self.add_callback = add_callback
         self.setWindowTitle("Chọn từ danh sách")
-        self.resize(1000, 700)
+        self.resize(1200, 800)
         
         self.db = DBManager()
         

@@ -64,80 +64,128 @@ class LoadItemsDialog(QDialog):
     def __init__(self, parent_page, machine_name, parent=None):
         super().__init__(parent)
         self.parent_page = parent_page
-        self.setWindowTitle(f"Xếp đồ vào máy - {machine_name}")
-        self.setMinimumSize(600, 500)
+        self.setWindowTitle(f"Xếp đồ vào lò tiệt khuẩn - {machine_name}")
+        self.setMinimumSize(1000, 700) # Phóng to màn hình con
         
         layout = QVBoxLayout(self)
         
-        hl = QHBoxLayout()
-        hl.addWidget(QLabel("Chọn phiên giao nhận:"))
-        self.cb_session = QComboBox()
-        self.session_data = {}
-        
-        if hasattr(self.parent_page, 'fetch_pending_sessions_callback'):
-            sessions = self.parent_page.fetch_pending_sessions_callback()
-            if sessions:
-                for s in sessions:
-                    self.session_data[s['display']] = (s['khoa'], s['ma_phieu'])
-                    self.cb_session.addItem(s['display'])
-                    
-        self.cb_session.currentIndexChanged.connect(self.load_items)
-        hl.addWidget(self.cb_session)
-        layout.addLayout(hl)
+        lbl_info = QLabel("Đánh dấu (Tick) vào các món đồ và nhập số lượng để đưa vào lò:")
+        lbl_info.setStyleSheet("font-size: 16px; font-weight: bold;")
+        layout.addWidget(lbl_info)
         
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(["Khoa / Món đồ", "Số Lượng"])
+        self.tree.setHeaderLabels(["Khoa / Tên Đồ", "Số Lượng Bỏ Vào Lò"])
         self.tree.header().setSectionResizeMode(0, QHeaderView.Stretch)
         self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         layout.addWidget(self.tree)
         
-        btn_nap = QPushButton("Xác nhận nạp toàn bộ vào máy")
-        btn_nap.setObjectName("PrimaryButton")
+        btn_layout = QHBoxLayout()
+        btn_nap = QPushButton("Xác nhận đưa vào lò")
+        btn_nap.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 10px;")
         btn_nap.clicked.connect(self.accept)
-        layout.addWidget(btn_nap)
+        btn_layout.addStretch()
+        btn_layout.addWidget(btn_nap)
+        layout.addLayout(btn_layout)
         
         self.staged_items = []
-        self.load_items()
+        self.load_all_pending_items()
         
-    def load_items(self):
+    def load_all_pending_items(self):
         self.tree.clear()
         self.staged_items = []
-        if not hasattr(self.parent_page, 'fetch_session_items_callback'): return
         
-        display_str = self.cb_session.currentText()
-        if not display_str or display_str not in self.session_data: return
+        # Gọi thẳng database để lấy toàn bộ đồ chờ tiệt khuẩn (từ Khử nhiễm hoặc Đóng gói)
+        rows = self.parent_page.db.fetch_all("""
+            SELECT id, khoa_giao, ma_do, so_luong, DATE_FORMAT(thoi_gian, '%d/%m %H:%i') as tm, ma_phieu 
+            FROM lich_su_giao_nhan 
+            WHERE trang_thai IN ('DA_KHU_NHIEM', 'DA_DONG_GOI')
+            ORDER BY thoi_gian ASC
+        """)
         
-        khoa, ma_phieu = self.session_data[display_str]
+        if not rows: return
         
-        groups = self.parent_page.fetch_session_items_callback(khoa, ma_phieu)
-        if not groups: return
-        
-        for k, items in groups.items():
-            k_item = QTreeWidgetItem(self.tree, [k, ""])
-            k_item.setExpanded(True)
+        groups = {}
+        for r in rows:
+            ma = r['ma_do']
+            ten = ma
+            # Truy xuất tên
+            try:
+                b = self.parent_page.db.fetch_one("SELECT ten_bo FROM danh_muc_bo_dung_cu WHERE ma_bo=%s", (ma,))
+                if b: ten = b['ten_bo']
+                else:
+                    v = self.parent_page.db.fetch_one("SELECT ten_do_vai FROM danh_muc_do_vai WHERE ma_do_vai=%s", (ma,))
+                    if v: ten = v['ten_do_vai']
+                    else:
+                        d = self.parent_page.db.fetch_one("SELECT ten_dc FROM danh_muc_dung_cu WHERE ma_dc=%s", (ma,))
+                        if d: ten = d['ten_dc']
+            except: pass
+            r['ten_do'] = ten
+            
+            key = f"{r['khoa_giao']} - {r['tm']}"
+            if key not in groups: groups[key] = []
+            groups[key].append(r)
+            
+        self.tree.blockSignals(True)
+        for key, items in groups.items():
+            parent = QTreeWidgetItem([key, ""])
+            parent.setCheckState(0, Qt.Unchecked)
+            parent.setBackground(0, QColor("#ecf0f1"))
+            font = QFont()
+            font.setBold(True)
+            parent.setFont(0, font)
+            self.tree.addTopLevelItem(parent)
+            
             for it in items:
-                item_node = QTreeWidgetItem(k_item, [f"{it['ma']} - {it['ten']}", ""])
+                child = QTreeWidgetItem([f"[{it['ma_do']}] {it['ten_do']}", ""])
+                child.setCheckState(0, Qt.Unchecked)
+                child.setData(0, Qt.UserRole, it['id'])
+                parent.addChild(child)
                 
+                from PySide6.QtWidgets import QSpinBox
                 spn = QSpinBox()
-                spn.setRange(1, int(it['sl']))
-                spn.setValue(int(it['sl']))
-                self.tree.setItemWidget(item_node, 1, spn)
+                spn.setRange(1, int(it['so_luong']))
+                spn.setValue(int(it['so_luong']))
+                spn.setStyleSheet("font-size: 16px;")
+                self.tree.setItemWidget(child, 1, spn)
                 
                 self.staged_items.append({
-                    "khoa_giao": k,
-                    "loai": "Khac",
-                    "ma_san_pham": it['ma'],
-                    "ten_san_pham": it['ten'],
-                    "so_luong": int(it['sl']),
-                    "req_id": it['req_id'],
-                    "spinbox_ref": spn
+                    "khoa_giao": it['khoa_giao'], "loai": "Khac",
+                    "ma_san_pham": it['ma_do'], "ten_san_pham": it['ten_do'],
+                    "so_luong": int(it['so_luong']), "req_id": it['id'], "spinbox_ref": spn, "tree_item": child
                 })
+            parent.setExpanded(True)
+        self.tree.blockSignals(False)
+        self.tree.itemChanged.connect(self.on_tree_item_changed)
+
+    def on_tree_item_changed(self, item, column):
+        if column != 0: return
+        self.tree.blockSignals(True)
+        state = item.checkState(0)
+        if item.parent() is None:
+            for i in range(item.childCount()): item.child(i).setCheckState(0, state)
+        else:
+            parent = item.parent()
+            all_checked, any_checked = True, False
+            for i in range(parent.childCount()):
+                if parent.child(i).checkState(0) == Qt.Checked: any_checked = True
+                else: all_checked = False
+            if all_checked: parent.setCheckState(0, Qt.Checked)
+            elif any_checked: parent.setCheckState(0, Qt.PartiallyChecked)
+            else: parent.setCheckState(0, Qt.Unchecked)
+        self.tree.blockSignals(False)
 
     def accept(self):
-        # Lấy giá trị user nhập vào trước khi đóng dialog
+        # Lọc ra những món user thực sự tick chọn
+        final_items = []
         for it in self.staged_items:
-            if 'spinbox_ref' in it:
+            if it['tree_item'].checkState(0) == Qt.Checked:
                 it['so_luong_chon'] = it['spinbox_ref'].value()
+                final_items.append(it)
+                
+        if not final_items:
+            QMessageBox.warning(self, "Lỗi", "Bạn chưa tick chọn món đồ nào!")
+            return
+        self.staged_items = final_items
         super().accept()
 
 class DetailViewDialog(QDialog):

@@ -86,12 +86,21 @@ class ReportsPage(QWidget):
             ton_ksnk = 0
             ton_khoa = []
             try:
-                res_ksnk = self.db.fetch_one("SELECT cssd_ton_thuc_te, ten_do_vai FROM danh_muc_do_vai WHERE ma_do_vai=%s", (keyword,))
-                if res_ksnk:
-                    ton_ksnk = res_ksnk['cssd_ton_thuc_te']
-                    ten = res_ksnk['ten_do_vai']
+                # Cập nhật: Tìm tên đúng ở cả 3 bảng
+                ten = "Không rõ"
+                ton_ksnk = 0
+                b = self.db.fetch_one("SELECT ten_bo FROM danh_muc_bo_dung_cu WHERE ma_bo=%s", (keyword,))
+                if b: ten = b['ten_bo']
                 else:
-                    ten = "Không rõ"
+                    v = self.db.fetch_one("SELECT ten_do_vai, cssd_ton_thuc_te FROM danh_muc_do_vai WHERE ma_do_vai=%s", (keyword,))
+                    if v: 
+                        ten = v['ten_do_vai']
+                        ton_ksnk = v.get('cssd_ton_thuc_te', 0)
+                    else:
+                        d = self.db.fetch_one("SELECT ten_dc FROM danh_muc_dung_cu WHERE ma_dc=%s", (keyword,))
+                        if d: ten = d['ten_dc']
+                
+                self.lbl_sum_ksnk.setText(f"Tồn KSNK Sạch: {ton_ksnk} ({ten})")
                     
                 res_tu = self.db.fetch_all("SELECT khoa, so_luong FROM tu_truc_khoa WHERE ma_do=%s AND so_luong > 0", (keyword,))
                 for r in res_tu: ton_khoa.append(f"{r['khoa']} ({r['so_luong']})")
@@ -227,7 +236,9 @@ class ReportsPage(QWidget):
         path, _ = QFileDialog.getSaveFileName(self, "Lưu báo cáo", "", "CSV Files (*.csv)")
         if path:
             try:
-                with open(path, 'w', newline='', encoding='utf-8-sig') as f:
+                import csv
+                # Thêm errors='ignore' để chống lỗi Unicode
+                with open(path, 'w', newline='', encoding='utf-8-sig', errors='ignore') as f:
                     writer = csv.writer(f)
                     # Header
                     headers = [self.table_log.horizontalHeaderItem(i).text() for i in range(self.table_log.columnCount())]
@@ -241,4 +252,4 @@ class ReportsPage(QWidget):
                         writer.writerow(row_data)
                 QMessageBox.information(self, "Thành công", f"Đã xuất file báo cáo tới:\n{path}")
             except Exception as e:
-                QMessageBox.critical(self, "Lỗi", str(e))
+                QMessageBox.critical(self, "Lỗi", f"Không thể xuất file: {str(e)}")

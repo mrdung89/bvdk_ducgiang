@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
+﻿from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
                                QPushButton, QLabel, QTableWidget, QTableWidgetItem, QDateEdit, QComboBox, 
                                QTreeWidget, QTreeWidgetItem, QHeaderView)
 from PySide6.QtCore import Qt, QDate
@@ -68,7 +68,7 @@ class DecontaminationPage(QWidget):
         
         layout.addLayout(bottom_layout)
         
-        # === Bảng trạng thái máy giặt ===
+        # === Bảng trạng thái Máy rửa ===
         layout.addSpacing(10)
         lbl_wash = QLabel("🔧 Trạng thái Máy Rửa/Khử khuẩn:")
         lbl_wash.setStyleSheet("font-weight: bold; font-size: 14px; color: #e67e22;")

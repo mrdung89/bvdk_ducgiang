@@ -160,47 +160,10 @@ class DashboardController(QObject):
             QMessageBox.information(self.view, "Thông báo", "Kho sạch trống.")
             
     def search_traceability(self):
+        from views.traceability_dialog import TraceabilityDialog
+        dlg = TraceabilityDialog(db=self.db, parent=self.view)
         keyword = self.view.txt_search.text().strip()
-        if not keyword: return
-        
-        # 1. Thử tìm theo mã bộ / tên bộ
-        result = self.db.get_traceability_timeline(keyword)
-        if result:
-            bo = result['bo_info']
-            cycles = result['cycles']
-            
-            msg = f"Tên bộ: {bo['ten_bo']}\nTrạng thái: {bo['trang_thai']}\n\n"
-            if not cycles:
-                msg += "Chưa có dữ liệu luân chuyển."
-            else:
-                latest = cycles[-1]
-                msg += "Chu kỳ gần nhất:\n"
-                for k in ['nhan', 'checklist', 'hap', 'cap']:
-                    ev = latest.get(k)
-                    if ev:
-                        msg += f"- {k.upper()}: {ev.get('thoi_gian_str')} (Mã: {ev.get('ma_phien','')})\n"
-                    else:
-                        msg += f"- {k.upper()}: ---\n"
-                        
-            QMessageBox.information(self.view, "Truy vết Bộ Dụng Cụ", msg)
-            return
-
-        # 2. Nếu không tìm thấy bộ, thử tìm theo Khoa
-        import unicodedata
-        def remove_accents(input_str):
-            nfkd_form = unicodedata.normalize('NFKD', input_str)
-            return u"".join([c for c in nfkd_form if not unicodedata.combining(c)]).lower()
-            
-        kw_clean = remove_accents(keyword)
-        date_str = self.view.date_edit.date().toString("yyyy-MM-dd")
-        
-        sql = "SELECT ma_do, so_luong, thoi_gian FROM lich_su_giao_nhan WHERE DATE(thoi_gian) = %s AND LOWER(khoa_giao) LIKE %s"
-        dept_history = self.db.fetch_all(sql, (date_str, f"%{kw_clean}%"))
-        
-        if dept_history:
-            msg = f"Lịch sử gửi đồ của Khoa '{keyword}' trong ngày {date_str}:\n\n"
-            for h in dept_history:
-                msg += f"- {h['thoi_gian']}: Gửi {h['so_luong']} {h['loai_do']} (Mã: {h['ma_do']})\n"
-            QMessageBox.information(self.view, f"Truy vết Khoa: {keyword}", msg)
-        else:
-            QMessageBox.information(self.view, "Kết quả", f"Không tìm thấy Bộ Dụng Cụ hoặc lịch sử Khoa '{keyword}'.")
+        if keyword:
+            dlg.txt_search.setText(keyword)
+            dlg._do_trace()
+        dlg.exec()

@@ -1,4 +1,5 @@
-from utils.vietnamese_filter import remove_vietnamese_accents
+from datetime import datetime
+﻿from utils.vietnamese_filter import remove_vietnamese_accents
 from PySide6.QtWidgets import (QComboBox, QWidget, QLineEdit, QListWidget, QVBoxLayout, QHBoxLayout, QPushButton, QDateEdit, 
                                QLabel, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QHeaderView, QTabWidget, 
                                QMessageBox, QInputDialog, QFileDialog, QSpinBox)
@@ -575,6 +576,7 @@ class ReceivePage(QWidget):
                 elif tt == 'CHO_CAP_PHAT': text_tt = "Sạch (chờ cấp phát)"
                 else: text_tt = tt
                 self.table_ward_send.setItem(r, 4, QTableWidgetItem(text_tt))
+            self.table_ward_send.resizeColumnsToContents()
         except: pass
 
     def setup_ward_nhan_tab(self):
@@ -593,6 +595,7 @@ class ReceivePage(QWidget):
                 self.table_ward_nhan.setItem(r, 1, QTableWidgetItem(str(row['thoi_gian'])))
                 self.table_ward_nhan.setItem(r, 2, QTableWidgetItem(row['ma_do']))
                 self.table_ward_nhan.setItem(r, 3, QTableWidgetItem(str(row['so_luong'])))
+            self.table_ward_nhan.resizeColumnsToContents()
         except: pass
 
     def setup_ward_req_tab(self):
@@ -622,6 +625,7 @@ class ReceivePage(QWidget):
                 self.table_ward_lb.setItem(r, 0, QTableWidgetItem(str(row['id'])))
                 self.table_ward_lb.setItem(r, 1, QTableWidgetItem(row['ma_do_vai']))
                 self.table_ward_lb.setItem(r, 2, QTableWidgetItem(str(row['so_luong'])))
+            self.table_ward_lb.resizeColumnsToContents()
         except: pass
 
     def setup_patient_tab(self):

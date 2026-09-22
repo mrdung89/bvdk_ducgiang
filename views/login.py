@@ -98,7 +98,7 @@ class LoginWindow(QWidget):
         
         lbl_user = QLabel("Tên đăng nhập:")
         self.txt_user = QLineEdit()
-        self.txt_user.setPlaceholderText("Nhập admin hoặc mrdung...")
+        self.txt_user.setPlaceholderText("Nhập tên đăng nhập...")
         layout.addWidget(lbl_user)
         layout.addWidget(self.txt_user)
         

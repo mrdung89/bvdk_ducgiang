@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import json
 import urllib.request
@@ -6,8 +6,8 @@ import zipfile
 import shutil
 import subprocess
 
-GITHUB_USER = 'TEN_TAI_KHOAN_GITHUB'
-GITHUB_REPO = 'TEN_REPO_GITHUB'
+GITHUB_USER = 'mrdung89'
+GITHUB_REPO = 'bvdk_ducgiang'
 BRANCH = 'main'
 
 VERSION_FILE = 'version.txt'

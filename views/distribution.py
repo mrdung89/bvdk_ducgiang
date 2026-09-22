@@ -1,5 +1,5 @@
 from datetime import datetime
-﻿from utils.vietnamese_filter import remove_vietnamese_accents
+from utils.vietnamese_filter import remove_vietnamese_accents
 from PySide6.QtWidgets import (QComboBox, QWidget, QLineEdit, QListWidget, QVBoxLayout, QHBoxLayout, QPushButton, QDateEdit, 
                                QLabel, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QHeaderView, QTabWidget, 
                                QMessageBox, QInputDialog, QFileDialog, QSpinBox)

@@ -1,4 +1,4 @@
-﻿from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
                                QPushButton, QLabel, QTableWidget, QTableWidgetItem, QDateEdit, QComboBox, 
                                QTreeWidget, QTreeWidgetItem, QHeaderView)
 from PySide6.QtCore import Qt, QDate

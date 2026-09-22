@@ -1,4 +1,4 @@
-﻿import json
+import json
 from datetime import datetime
 from PySide6.QtWidgets import (QSpinBox, QFrame, QScrollArea, QWidget, QVBoxLayout, QPushButton, QLabel, QTableWidget, 
                                QTableWidgetItem, QHeaderView, QMessageBox, QDialog, QComboBox, 

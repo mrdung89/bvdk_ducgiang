@@ -12,6 +12,7 @@ warnings.filterwarnings("ignore")
 from models.db_manager import DBManager
 from views.dashboard_components import DashboardMachineCard
 from views.traceability_dialog import TraceabilityDialog
+from views.drilldown_dialog import DrilldownDialog
 
 class DashboardController(QObject):
     # Signals to update UI from background threads
@@ -135,7 +136,7 @@ class DashboardController(QObject):
         date_str = self.view.date_edit.date().toString("yyyy-MM-dd")
         items = self.db.get_kpi_received_drilldown(date_str)
         if items:
-            dlg = TraceabilityDialog(f"Tiếp nhận hôm nay ({date_str})", items, self.view)
+            dlg = DrilldownDialog(f"Tiếp nhận hôm nay ({date_str})", items, self.view)
             dlg.exec()
         else:
             QMessageBox.information(self.view, "Thông báo", "Không có dữ liệu tiếp nhận.")
@@ -148,13 +149,13 @@ class DashboardController(QObject):
             QMessageBox.information(self.view, "Thông báo", "Không có dữ liệu mẻ chạy.")
             return
             
-        dlg = TraceabilityDialog(f"Thiết bị đã xử lý ({date_str})", items, self.view)
+        dlg = DrilldownDialog(f"Thiết bị đã xử lý ({date_str})", items, self.view)
         dlg.exec()
 
     def show_drilldown_kho(self):
         items = self.db.get_kpi_clean_inventory_drilldown()
         if items:
-            dlg = TraceabilityDialog("Kho sạch tồn", items, self.view)
+            dlg = DrilldownDialog("Kho sạch tồn", items, self.view)
             dlg.exec()
         else:
             QMessageBox.information(self.view, "Thông báo", "Kho sạch trống.")

@@ -82,6 +82,13 @@ class SterilizationController(QObject):
         return groups
 
     def poll_db(self):
+
+        # Auto-sweep expired sterilization machines
+        try:
+            self.db.execute("UPDATE machines SET status='WAIT_END' WHERE group_id=3 AND status='RUNNING' AND end_time <= NOW()")
+        except:
+            pass
+
         try:
             res = self.db.fetch_all("SELECT * FROM machines WHERE group_id=3")
             if res:
@@ -108,7 +115,7 @@ class SterilizationController(QObject):
                     if req_id:
                         self.db.execute("UPDATE lich_su_giao_nhan SET trang_thai IN ('DA_KHU_NHIEM', 'DA_DONG_GOI') WHERE id=%s", (req_id,))
                         
-            self.db.execute("UPDATE machines SET status='READY', end_time=NULL, loaded_items_json=NULL, current_cycle_id=NULL WHERE id=%s", (mac['id'],))
+            
             now = datetime.now()
             self.db.execute("INSERT INTO runs (machine_id, date, time, cycle_type_id, status, note) VALUES (%s, %s, %s, %s, %s, %s)",
                             (mac['id'], now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), mac.get('current_cycle_id'), "CANCELLED", "Người dùng bấm Hủy"))
@@ -165,11 +172,16 @@ class SterilizationController(QObject):
         trang_thai_moi = "CHO_CAP_PHAT" if result_status == "PASS" else "LOI_TIET_KHUAN"
         nv_thuc_hien = getattr(self, 'user_data', {}).get('full_name', 'KSNK')
         
+        
         try:
+            # FORCE UPDATE MACHINE TO READY FIRST to guarantee UI unlock
+            self.db.execute("UPDATE machines SET status='READY', end_time=NULL, loaded_items_json=NULL, current_cycle_id=NULL WHERE id=%s", (mac['id'],))
+            
             status = "STERILE (Pass)" if result_status == "PASS" else "FAIL (Lỗi Hấp)"
+
             sets = self.db.get_tracked_sets()
             for s in sets:
-                if f"STERILIZING ({mac['name']})" in s['trang_thai']:
+                if s.get('trang_thai') and f"STERILIZING ({mac['name']})" in s['trang_thai']:
                     self.db.track_set_status(s['ma_bo'], s['ten_bo'], s['khoa_gui'], status)
             
             items_json = mac.get('loaded_items_json')
@@ -188,7 +200,7 @@ class SterilizationController(QObject):
                         if result_status == "PASS" and ma_sp:
                             self.db.execute("UPDATE danh_muc_do_vai SET cssd_ton_thuc_te = cssd_ton_thuc_te + %s WHERE ma_do_vai=%s", (sl, ma_sp))
             
-            self.db.execute("UPDATE machines SET status='READY', end_time=NULL, loaded_items_json=NULL, current_cycle_id=NULL WHERE id=%s", (mac['id'],))
+            
             now = datetime.now()
             self.db.execute("INSERT INTO runs (machine_id, date, time, cycle_type_id, status, note) VALUES (%s, %s, %s, %s, %s, %s)",
                             (mac['id'], now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), mac.get('current_cycle_id'), result_status, test_note))

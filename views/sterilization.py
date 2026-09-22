@@ -566,6 +566,7 @@ class MachineCard(QFrame):
         
         if state == "READY":
             self.auto_popped = False
+            self.lbl_time.setText("--:--")
             self.lbl_status.setText("SẴN SÀNG")
             self.lbl_status.setStyleSheet("font-size: 14px; font-weight: bold; color: #27ae60;")
             self.setStyleSheet("QFrame { background-color: #ffffff; border: 2px solid #bdc3c7; border-radius: 8px; }")

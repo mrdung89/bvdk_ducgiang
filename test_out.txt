@@ -1,0 +1,1 @@
+147:                 self.lbl_status.setText("ĐÃ HOÀN THÀNH")

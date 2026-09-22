@@ -45,7 +45,7 @@ class DashboardController(QObject):
         # Set a timer to reload data every 5 minutes
         self.reload_timer = QTimer(self)
         self.reload_timer.timeout.connect(self.load_data)
-        self.reload_timer.start(300000)
+        self.reload_timer.start(5000)
 
     def load_data(self):
         date_str = self.view.date_edit.date().toString("yyyy-MM-dd")

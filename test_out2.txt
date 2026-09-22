@@ -1,0 +1,43 @@
+            QFrame:hover {{
+                background-color: {QColor(color).lighter(110).name()};
+            }}
+        """)
+
+    def update_timer(self):
+        if not self.start_time or not self.duration or self.status != 'RUNNING':
+            return
+            
+        try:
+            if isinstance(self.start_time, str):
+                start_dt = datetime.strptime(self.start_time, '%Y-%m-%d %H:%M:%S')
+            else:
+                start_dt = self.start_time
+                
+            elapsed = (datetime.now() - start_dt).total_seconds()
+            rem = (self.duration * 60) - elapsed
+            
+            if rem > 0:
+                mins = int(rem // 60)
+                secs = int(rem % 60)
+                self.lbl_timer.setText(f"{mins:02d}:{secs:02d}")
+                self.blinking = False
+                self.lbl_timer.setStyleSheet("font-size: 20px; font-weight: bold; color: yellow;")
+            else:
+                self.lbl_timer.setText("00:00")
+                self.blinking = True
+                self.lbl_status.setText("ĐÃ HOÀN THÀNH")
+                
+                # Blinking effect
+                if self.blink_state:
+                    self.lbl_timer.setStyleSheet("font-size: 20px; font-weight: bold; color: yellow;")
+                else:
+                    self.lbl_timer.setStyleSheet("font-size: 20px; font-weight: bold; color: transparent;")
+                self.blink_state = not self.blink_state
+                
+        except Exception as e:
+            print("Timer error:", e)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit(self.machine_name)
+        super().mousePressEvent(event)

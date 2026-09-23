@@ -107,7 +107,7 @@ class DailyHistoryDialog(QDialog):
                      FROM lich_su_giao_nhan 
                      WHERE DATE(thoi_gian) >= %s AND DATE(thoi_gian) <= %s AND trang_thai != 'CHO_TIEP_NHAN' """
         else:
-            sql = """SELECT c.id, p.khoa_nhan as khoa, c.ma_do, c.so_luong, 'Đã cấp' as trang_thai, p.thoi_gian, p.nguoi_giao as nguoi_thuc_hien, p.ma_phieu 
+            sql = """SELECT c.id, p.khoa_nhan as khoa, c.ma_do, c.so_luong, 'Đã cấp' as trang_thai, p.thoi_gian, 'KSNK' as nguoi_thuc_hien, p.ma_phieu 
                      FROM chi_tiet_cap_phat c 
                      JOIN phieu_cap_phat p ON c.ma_phieu = p.ma_phieu
                      WHERE DATE(p.thoi_gian) >= %s AND DATE(p.thoi_gian) <= %s """

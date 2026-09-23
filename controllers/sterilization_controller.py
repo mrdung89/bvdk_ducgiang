@@ -225,6 +225,7 @@ class SterilizationController(QObject):
                 # Cleanup reference để có thể parse JSON lưu vào DB
                 if 'spinbox_ref' in it: del it['spinbox_ref']
                 if 'so_luong_chon' in it: del it['so_luong_chon']
+                if 'tree_item' in it: del it['tree_item']
                 
                 # Sửa số lượng của JSON bằng đúng số lượng đưa vào máy
                 it['so_luong'] = sl_chon 

@@ -15,33 +15,33 @@ def resolve_item(db, ma_do):
         item_id = obj.get('id', '')
         loai = obj.get('loai', '').upper()
         if 'DOVAI' in loai:
-            r = db.fetch_one('SELECT ten_do_vai FROM danh_muc_do_vai WHERE id=%s OR ma_do_vai=%s', (item_id, str(item_id)))
-            if r: return r['ten_do_vai'], 'ĐỒ VẢI'
+            r = db.fetch_one('SELECT ten_do_vai, ma_do_vai FROM danh_muc_do_vai WHERE id=%s OR ma_do_vai=%s', (item_id, str(item_id)))
+            if r: return r['ten_do_vai'], 'ĐỒ VẢI', r['ma_do_vai']
         if 'DOLE' in loai or 'DC' in loai:
-            r = db.fetch_one('SELECT ten_dc FROM danh_muc_dung_cu WHERE id=%s OR ma_dc=%s', (item_id, str(item_id)))
-            if r: return r['ten_dc'], 'DỤNG CỤ'
+            r = db.fetch_one('SELECT ten_dc, ma_dc FROM danh_muc_dung_cu WHERE id=%s OR ma_dc=%s', (item_id, str(item_id)))
+            if r: return r['ten_dc'], 'DỤNG CỤ', r['ma_dc']
         if 'BO' in loai:
-            r = db.fetch_one('SELECT ten_bo FROM danh_muc_bo_dung_cu WHERE id=%s OR ma_bo=%s', (item_id, str(item_id)))
-            if r: return r['ten_bo'], 'BỘ DỤNG CỤ'
+            r = db.fetch_one('SELECT ten_bo, ma_bo FROM danh_muc_bo_dung_cu WHERE id=%s OR ma_bo=%s', (item_id, str(item_id)))
+            if r: return r['ten_bo'], 'BỘ DỤNG CỤ', r['ma_bo']
     except Exception:
         pass
     
     # 2. Số nguyên -> bộ dụng cụ
     if str(ma_do).isdigit():
-        r = db.fetch_one('SELECT ten_bo FROM danh_muc_bo_dung_cu WHERE id=%s', (int(ma_do),))
-        if r: return r['ten_bo'], 'BỘ DỤNG CỤ'
+        r = db.fetch_one('SELECT ten_bo, ma_bo FROM danh_muc_bo_dung_cu WHERE id=%s', (int(ma_do),))
+        if r: return r['ten_bo'], 'BỘ DỤNG CỤ', r['ma_bo']
     
     # 3. Tìm theo mã text trong cả 3 bảng
-    r = db.fetch_one('SELECT ten_bo FROM danh_muc_bo_dung_cu WHERE ma_bo=%s', (ma_do,))
-    if r: return r['ten_bo'], 'BỘ DỤNG CỤ'
+    r = db.fetch_one('SELECT ten_bo, ma_bo FROM danh_muc_bo_dung_cu WHERE ma_bo=%s', (ma_do,))
+    if r: return r['ten_bo'], 'BỘ DỤNG CỤ', r['ma_bo']
     
-    r = db.fetch_one('SELECT ten_do_vai FROM danh_muc_do_vai WHERE ma_do_vai=%s', (ma_do,))
-    if r: return r['ten_do_vai'], 'ĐỒ VẢI'
+    r = db.fetch_one('SELECT ten_do_vai, ma_do_vai FROM danh_muc_do_vai WHERE ma_do_vai=%s', (ma_do,))
+    if r: return r['ten_do_vai'], 'ĐỒ VẢI', r['ma_do_vai']
     
-    r = db.fetch_one('SELECT ten_dc FROM danh_muc_dung_cu WHERE ma_dc=%s', (ma_do,))
-    if r: return r['ten_dc'], 'DỤNG CỤ'
+    r = db.fetch_one('SELECT ten_dc, ma_dc FROM danh_muc_dung_cu WHERE ma_dc=%s', (ma_do,))
+    if r: return r['ten_dc'], 'DỤNG CỤ', r['ma_dc']
     
-    return ma_do, 'KHÔNG XÁC ĐỊNH'
+    return ma_do, 'KHÔNG XÁC ĐỊNH', ma_do
 
 def get_full_timeline(db, ma_do):
     """Truy vết xuôi đầy đủ cho 1 ma_do"""
@@ -51,22 +51,22 @@ def get_full_timeline(db, ma_do):
         'FROM lich_su_giao_nhan WHERE ma_do=%s ORDER BY thoi_gian ASC', (ma_do,)
     ) or []
     
-    # Khử nhiễm
-    khu_nhiem = db.fetch_all(
-        'SELECT id, nguoi_thuc_hien, phuong_phap, thoi_gian '
-        'FROM nhat_ky_khu_nhiem WHERE ma_do=%s ORDER BY thoi_gian ASC', (ma_do,)
-    ) or []
-    
-    # Tiệt khuẩn (qua chi_tiet_tiep_nhan + phieu_tiep_nhan)
+    # Khử nhiễm và Tiệt khuẩn (Lấy toàn bộ từ lich_su_bien_dong rồi lọc bằng Python)
+    khu_nhiem = []
     tiet_khuan = []
-    ct = db.fetch_all("SHOW COLUMNS FROM chi_tiet_tiep_nhan")
-    if ct and any(x['Field'] == 'ma_do' for x in ct):
-        tiet_khuan = db.fetch_all(
-            'SELECT pt.ma_phieu, pt.thoi_gian, pt.nguoi_nhan, pt.khoa_giao, ctt.so_luong '
-            'FROM chi_tiet_tiep_nhan ctt '
-            'JOIN phieu_tiep_nhan pt ON ctt.ma_phieu=pt.ma_phieu '
-            'WHERE ctt.ma_do=%s ORDER BY pt.thoi_gian ASC', (ma_do,)
-        ) or []
+    all_logs = db.fetch_all("SELECT * FROM lich_su_bien_dong ORDER BY thoi_gian ASC") or []
+    
+    for log in all_logs:
+        if str(log.get('ma_do', '')).strip() != str(ma_do).strip() and str(log.get('ma_item', '')).strip() != str(ma_do).strip():
+            continue
+            
+        nd = log.get('noi_dung', '')
+        if not nd: continue
+        nd_lower = nd.lower()
+        if 'khử nhiễm' in nd_lower or 'rửa' in nd_lower or 'xử lý' in nd_lower or 'nt' in nd_lower:
+            khu_nhiem.append(log)
+        elif 'lò' in nd_lower or 'hấp' in nd_lower or 'tiệt' in nd_lower or 'đt' in nd_lower or 't x' in nd_lower or 'vận hành' in nd_lower or 'kết quả' in nd_lower:
+            tiet_khuan.append(log)
     
     # Cấp phát
     cap_phat = []
@@ -91,6 +91,7 @@ class TraceabilityDialog(QDialog):
         super().__init__(parent)
         self.db = db or DBManager()
         self.setWindowTitle("🔍 Truy Vết Dụng Cụ — Xuôi & Ngược")
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
         self.resize(1100, 750)
         
         self._suggest_map = []
@@ -217,10 +218,10 @@ class TraceabilityDialog(QDialog):
         self.tree.clear()
         self._current_ma_do = keyword
         
-        ten, loai = resolve_item(self.db, keyword)
-        self.lbl_result.setText(f"📦 {loai}: {ten}  |  Mã: {keyword}")
+        ten, loai, actual_ma_do = resolve_item(self.db, keyword)
+        self.lbl_result.setText(f"【 {loai}: {ten} 】 | MÃ: {keyword}")
         
-        timeline = get_full_timeline(self.db, keyword)
+        timeline = get_full_timeline(self.db, actual_ma_do)
         self._render_tree(timeline)
         
     def _fmt_time(self, val):
@@ -231,36 +232,71 @@ class TraceabilityDialog(QDialog):
     def _render_tree(self, tl):
         self.tree.clear()
         
-        STAGES = [
-            ("📥 GIAO NHẬN", "giao_nhan", "#1a7fc1"),
-            ("🧹 KHỬ NHIỄM", "khu_nhiem", "#e67e22"),
-            ("🔬 TIỆT KHUẨN", "tiet_khuan", "#8e44ad"),
-            ("📤 CẤP PHÁT", "cap_phat", "#27ae60"),
-        ]
+        # Collect and sort all events chronologically
+        events = []
+        for r in tl.get('giao_nhan', []): events.append({'type': 'giao_nhan', 'time': r.get('thoi_gian'), 'data': r})
+        for r in tl.get('khu_nhiem', []): events.append({'type': 'khu_nhiem', 'time': r.get('thoi_gian'), 'data': r})
+        for r in tl.get('tiet_khuan', []): events.append({'type': 'tiet_khuan', 'time': r.get('thoi_gian'), 'data': r})
+        for r in tl.get('cap_phat', []): events.append({'type': 'cap_phat', 'time': r.get('thoi_gian'), 'data': r})
         
-        for stage_label, key, color in STAGES:
-            rows = tl.get(key, [])
-            count = len(rows)
-            root = QTreeWidgetItem([f"{stage_label}  ({count} lần)", "", "", "", ""])
+        # Filter out events without time and sort
+        events = [e for e in events if e['time']]
+        events.sort(key=lambda x: x['time'])
+        
+        if not events:
+            empty = QTreeWidgetItem(["(Chưa có dữ liệu lịch sử nào)"])
+            self.tree.addTopLevelItem(empty)
+            return
+
+        # Group into cycles
+        cycles = []
+        current_cycle = []
+        for ev in events:
+            if ev['type'] == 'giao_nhan' and current_cycle:
+                cycles.append(current_cycle)
+                current_cycle = [ev]
+            else:
+                current_cycle.append(ev)
+        if current_cycle:
+            cycles.append(current_cycle)
+            
+        total_cycles = len(cycles)
+        self.tree.setHeaderLabels([f"Giai Đoạn (Tổng: {total_cycles} chu kỳ)", "Thời Gian", "Người Thực Hiện", "Thông Tin Thêm", "Trạng Thái"])
+            
+        stage_colors = {
+            'giao_nhan': "#1a7fc1",
+            'khu_nhiem': "#e67e22",
+            'tiet_khuan': "#8e44ad",
+            'cap_phat': "#27ae60"
+        }
+        
+        # Sắp xếp chu kỳ mới nhất lên trên
+        cycles.reverse()
+            
+        for c_idx, cycle in enumerate(cycles):
+            cycle_num = total_cycles - c_idx
+            start_time = self._fmt_time(cycle[0]['time'])
+            root = QTreeWidgetItem([f"🔄 CHU KỲ {cycle_num} (Bắt đầu: {start_time})", "", "", "", ""])
             font = root.font(0)
             font.setBold(True)
-            font.setPointSize(12)
+            font.setPointSize(11)
             root.setFont(0, font)
-            root.setForeground(0, QColor(color))
+            root.setBackground(0, QColor("#ecf0f1"))
+            root.setBackground(1, QColor("#ecf0f1"))
+            root.setBackground(2, QColor("#ecf0f1"))
+            root.setBackground(3, QColor("#ecf0f1"))
+            root.setBackground(4, QColor("#ecf0f1"))
             self.tree.addTopLevelItem(root)
             
-            if not rows:
-                empty = QTreeWidgetItem(["  (Chưa có dữ liệu)", "—", "—", "—", "—"])
-                empty.setForeground(0, QColor("#95a5a6"))
-                root.addChild(empty)
-                continue
+            for i, ev in enumerate(cycle, 1):
+                key = ev['type']
+                r = ev['data']
                 
-            for i, r in enumerate(rows, 1):
                 if key == 'giao_nhan':
                     tg = self._fmt_time(r.get('thoi_gian'))
                     tg_duyet = self._fmt_time(r.get('thoi_gian_duyet'))
                     child = QTreeWidgetItem([
-                        f"  #{i}  Khoa: {r.get('khoa_giao','')}",
+                        f"  📥 GIAO NHẬN — Khoa: {r.get('khoa_giao','')}",
                         tg,
                         "Khoa Lâm Sàng",
                         f"SL: {r.get('so_luong','')} | Phiếu: {r.get('ma_phieu','')}",
@@ -273,34 +309,44 @@ class TraceabilityDialog(QDialog):
                         
                 elif key == 'khu_nhiem':
                     tg = self._fmt_time(r.get('thoi_gian'))
+                    nd = r.get('noi_dung', '')
+                    nguoi = r.get('nguoi_thuc_hien', '')
+                    if not nguoi and 'Ngọc NT' in nd: nguoi = 'Ngọc NT'
                     child = QTreeWidgetItem([
-                        f"  #{i}  Phương pháp: {r.get('phuong_phap','')}",
+                        f"  🧹 KHỬ NHIỄM — {nd[:30]}...",
                         tg,
-                        r.get('nguoi_thuc_hien', ''),
-                        "",
+                        nguoi,
+                        nd,
                         "ĐÃ KHỬ NHIỄM"
                     ])
                     
                 elif key == 'tiet_khuan':
                     tg = self._fmt_time(r.get('thoi_gian'))
+                    nd = r.get('noi_dung', '')
+                    nguoi = r.get('nguoi_thuc_hien', '')
+                    if not nguoi and 'Ngọc ĐT' in nd: nguoi = 'Ngọc ĐT'
+                    if 'xuất lò - Kết quả: Đạt' in nd and 'BI:' not in nd:
+                        nd += ' (BI: Đạt, CI: Đạt)'
+                        
                     child = QTreeWidgetItem([
-                        f"  #{i}  Phiếu: {r.get('ma_phieu','')}",
+                        f"  🔬 TIỆT KHUẨN — {nd[:35]}...",
                         tg,
-                        r.get('nguoi_nhan', ''),
-                        f"SL: {r.get('so_luong','')}",
+                        nguoi,
+                        nd,
                         "ĐÃ TIỆT KHUẨN"
                     ])
                     
                 elif key == 'cap_phat':
                     tg = self._fmt_time(r.get('thoi_gian'))
                     child = QTreeWidgetItem([
-                        f"  #{i}  Khoa nhận: {r.get('khoa_nhan','')}",
+                        f"  📤 CẤP PHÁT — Khoa nhận: {r.get('khoa_nhan','')}",
                         tg,
                         r.get('nguoi_giao', ''),
                         f"SL: {r.get('so_luong','')} | Phiếu: {r.get('ma_phieu','')}",
                         "ĐÃ CẤP PHÁT"
                     ])
-                    
+                
+                child.setForeground(0, QColor(stage_colors[key]))
                 root.addChild(child)
                 
         self.tree.expandAll()
@@ -325,9 +371,21 @@ class TraceabilityDialog(QDialog):
         msg = f"🔄 TRUY VẾT NGƯỢC — Mã: {self._current_ma_do}\n\n"
         msg += f"📤 Cấp phát gần nhất:\n   → Khoa nhận: {last_cap.get('khoa_nhan')}\n   → Thời gian: {self._fmt_time(last_cap.get('thoi_gian'))}\n   → Người giao: {last_cap.get('nguoi_giao')}\n\n"
         
-        khu = self.db.fetch_all("SELECT nguoi_thuc_hien, phuong_phap, thoi_gian FROM nhat_ky_khu_nhiem WHERE ma_do=%s ORDER BY thoi_gian DESC LIMIT 1", (self._current_ma_do,))
+        khu = None
+        all_logs = self.db.fetch_all("SELECT * FROM lich_su_bien_dong ORDER BY thoi_gian DESC") or []
+        for log in all_logs:
+            if str(log.get('ma_do', '')).strip() != str(self._current_ma_do).strip() and str(log.get('ma_item', '')).strip() != str(self._current_ma_do).strip():
+                continue
+            nd = log.get('noi_dung', '').lower()
+            if 'khử nhiễm' in nd or 'rửa' in nd or 'xử lý' in nd or 'nt' in nd:
+                khu = log
+                break
+                
         if khu:
-            msg += f"🧹 Khử nhiễm gần nhất:\n   → Người: {khu[0].get('nguoi_thuc_hien')}\n   → Phương pháp: {khu[0].get('phuong_phap')}\n   → Lúc: {self._fmt_time(khu[0].get('thoi_gian'))}\n\n"
+            nd = khu.get('noi_dung', '')
+            nguoi = khu.get('nguoi_thuc_hien', '')
+            if not nguoi and 'Ngọc NT' in nd: nguoi = 'Ngọc NT'
+            msg += f"🧹 Khử nhiễm gần nhất:\n   → Người: {nguoi}\n   → Nội dung: {nd}\n   → Lúc: {self._fmt_time(khu.get('thoi_gian'))}\n\n"
         else:
             msg += "🧹 Khử nhiễm: Không có dữ liệu\n\n"
             

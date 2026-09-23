@@ -804,13 +804,29 @@ class IssuePage(QWidget):
         if not khoa:
             QMessageBox.warning(self, "Lỗi", "Vui lòng chọn Khoa trước!")
             return
-        dlg = MultiItemDialog(self, f"Thêm đồ cho {khoa}", list_type="do_vai", target_khoa=khoa)
+        # Đổi list_type="do_vai" thành "all"
+        dlg = MultiItemDialog(self, f"Thêm đồ cho {khoa}", list_type="all", target_khoa=khoa)
         if dlg.exec():
             for code, qty in dlg.items_to_submit:
-                # Need name and type? We can just query or leave blank, but better to just show code
-                info = self.db.fetch_one("SELECT ten_do_vai as n FROM danh_muc_do_vai WHERE ma_do_vai=%s", (code,))
-                name = info['n'] if info else ''
-                self.add_item_to_cart('VẢI', code, name, qty)
+                # Kiểm tra cả 3 bảng để xác định đúng loại và tên
+                ten_do = ""
+                loai_do = "VẢI"
+                b = self.db.fetch_one("SELECT ten_bo FROM danh_muc_bo_dung_cu WHERE ma_bo=%s", (code,))
+                if b:
+                    ten_do = b['ten_bo']
+                    loai_do = "BỘ"
+                else:
+                    v = self.db.fetch_one("SELECT ten_do_vai FROM danh_muc_do_vai WHERE ma_do_vai=%s", (code,))
+                    if v:
+                        ten_do = v['ten_do_vai']
+                        loai_do = "VẢI"
+                    else:
+                        d = self.db.fetch_one("SELECT ten_dc FROM danh_muc_dung_cu WHERE ma_dc=%s", (code,))
+                        if d:
+                            ten_do = d['ten_dc']
+                            loai_do = "LẺ"
+                
+                self.add_item_to_cart(loai_do, code, ten_do, qty)
                 
     def add_item_to_cart(self, typ, code, name, qty):
         qty = int(qty)

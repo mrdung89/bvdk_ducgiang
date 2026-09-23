@@ -99,8 +99,6 @@ class ReportsPage(QWidget):
                     else:
                         d = self.db.fetch_one("SELECT ten_dc FROM danh_muc_dung_cu WHERE ma_dc=%s", (keyword,))
                         if d: ten = d['ten_dc']
-                
-                self.lbl_sum_ksnk.setText(f"Tồn KSNK Sạch: {ton_ksnk} ({ten})")
                     
                 res_tu = self.db.fetch_all("SELECT khoa, so_luong FROM tu_truc_khoa WHERE ma_do=%s AND so_luong > 0", (keyword,))
                 for r in res_tu: ton_khoa.append(f"{r['khoa']} ({r['so_luong']})")
@@ -111,12 +109,15 @@ class ReportsPage(QWidget):
                 self.lbl_trace_summary.setText(txt_summary)
                 
                 # 2. History
-                history = self.db.fetch_all("SELECT * FROM lich_su_bien_dong WHERE ma_item LIKE %s ORDER BY thoi_gian DESC LIMIT 100", (f"%{keyword}%",))
-                self.table_trace.setRowCount(len(history))
-                for r, row in enumerate(history):
-                    self.table_trace.setItem(r, 0, QTableWidgetItem(str(row['thoi_gian'])))
-                    self.table_trace.setItem(r, 1, QTableWidgetItem(row['nguoi_thuc_hien']))
-                    self.table_trace.setItem(r, 2, QTableWidgetItem(row['noi_dung']))
+                history = self.db.fetch_all("SELECT * FROM lich_su_bien_dong WHERE ma_do LIKE %s ORDER BY thoi_gian DESC LIMIT 100", (f"%{keyword}%",))
+                if history:
+                    self.table_trace.setRowCount(len(history))
+                    for r, row in enumerate(history):
+                        self.table_trace.setItem(r, 0, QTableWidgetItem(str(row.get('thoi_gian', ''))))
+                        self.table_trace.setItem(r, 1, QTableWidgetItem(str(row.get('nguoi_thuc_hien', ''))))
+                        self.table_trace.setItem(r, 2, QTableWidgetItem(str(row.get('noi_dung', ''))))
+                else:
+                    self.table_trace.setRowCount(0)
             except Exception as e:
                 self.lbl_trace_summary.setText(f"Lỗi: {str(e)}")
                 

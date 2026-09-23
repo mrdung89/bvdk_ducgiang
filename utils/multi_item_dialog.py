@@ -35,6 +35,7 @@ class MultiItemDialog(QDialog):
         
         for btn in [self.btn_all, self.btn_vai, self.btn_bo, self.btn_le]:
             btn.setCheckable(True)
+            btn.setStyleSheet("QPushButton { padding: 4px 10px; border-radius: 4px; } QPushButton:checked { background-color: #2980b9; color: white; font-weight: bold; }")
             filter_layout.addWidget(btn)
             
         self.btn_all.setChecked(True)

@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QSpinBox, QFrame, QGridLayout, QScrollArea
 class TestResultDialog(QDialog):
     def __init__(self, machine_name, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
         self.setWindowTitle(f"Xác nhận kết quả Test - {machine_name}")
         self.setFixedSize(450, 300)
         self.result = "FAIL"
@@ -63,6 +64,7 @@ class TestResultDialog(QDialog):
 class LoadItemsDialog(QDialog):
     def __init__(self, parent_page, machine_name, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
         self.parent_page = parent_page
         self.setWindowTitle(f"Xếp đồ vào lò tiệt khuẩn - {machine_name}")
         self.setMinimumSize(1000, 700) # Phóng to màn hình con
@@ -191,6 +193,7 @@ class LoadItemsDialog(QDialog):
 class DetailViewDialog(QDialog):
     def __init__(self, machine_name, items_list, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
         self.setWindowTitle(f"Chi tiết đồ trong máy - {machine_name}")
         self.setMinimumSize(500, 500)
         layout = QVBoxLayout(self)
@@ -225,6 +228,7 @@ class MachineDetailDialog(QDialog):
     
     def __init__(self, mac, loaded_items, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
         self.mac = mac
         self.loaded_items = loaded_items
         self.setWindowTitle(f"Chi tiết — {mac.get('name', '')}")
@@ -519,7 +523,11 @@ class MachineCard(QFrame):
         items_json = mac.get('loaded_items_json')
         if items_json:
             try:
-                self.loaded_items = json.loads(items_json)
+                parsed = json.loads(items_json)
+                if isinstance(parsed, dict):
+                    self.loaded_items = parsed.get("items", [])
+                else:
+                    self.loaded_items = parsed
                 tree_dict = {}
                 for it in self.loaded_items:
                     k = it.get('khoa_giao', 'Khoa')

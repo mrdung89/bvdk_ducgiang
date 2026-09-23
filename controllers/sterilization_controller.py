@@ -152,7 +152,24 @@ class SterilizationController(QObject):
             cycle_mins = int(selected_cycle.get('thoi_gian', 60))
             end_time = datetime.now() + timedelta(minutes=cycle_mins)
             
-            self.db.execute("UPDATE machines SET status='RUNNING', end_time=%s, current_cycle_id=%s WHERE id=%s", (end_time, selected_cycle['id'], mac['id']))
+            nv = getattr(self, 'user_data', {}).get('full_name', 'KSNK')
+            items_json = mac.get('loaded_items_json')
+            try:
+                jdata = json.loads(items_json) if items_json else []
+                if isinstance(jdata, list):
+                    new_data = {"items": jdata, "cycle": selected_cycle['name'], "operator": nv}
+                elif isinstance(jdata, dict):
+                    jdata["cycle"] = selected_cycle['name']
+                    jdata["operator"] = nv
+                    new_data = jdata
+                else:
+                    new_data = {"items": [], "cycle": selected_cycle['name'], "operator": nv}
+                updated_json = json.dumps(new_data)
+            except:
+                updated_json = json.dumps({"items": [], "cycle": selected_cycle['name'], "operator": nv})
+            
+            self.db.execute("UPDATE machines SET status='RUNNING', end_time=%s, current_cycle_id=%s, loaded_items_json=%s WHERE id=%s", 
+                            (end_time, selected_cycle['id'], updated_json, mac['id']))
             
             payload = json.dumps({"action": "START", "machine_id": mac['id']})
             self.db.execute("INSERT INTO sync_system (event_type, payload) VALUES (%s, %s)", ("STERILIZATION_SYNC", payload))
@@ -163,8 +180,26 @@ class SterilizationController(QObject):
             for s in sets:
                 if s['trang_thai'] == "ASSEMBLED (Đã đóng gói)":
                     self.db.track_set_status(s['ma_bo'], s['ten_bo'], s['khoa_gui'], f"STERILIZING ({mac['name']})")
-                    
             self.poll_db()
+            
+            ans = QMessageBox.question(self.view, "In Phiếu Vận Hành", "Bạn có muốn in phiếu vận hành máy (Excel) không?", QMessageBox.Yes | QMessageBox.No)
+            if ans == QMessageBox.Yes:
+                from utils.excel_reporter import ExcelReporter
+                reporter = ExcelReporter(self.view)
+                start_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+                
+                # Fetch fresh from updated_json
+                try:
+                    parsed_j = json.loads(updated_json)
+                    if isinstance(parsed_j, dict):
+                        items = parsed_j.get('items', [])
+                    else:
+                        items = parsed_j
+                except:
+                    items = []
+                
+                reporter.create_machine_run_report(mac['name'], selected_cycle['name'], start_str, items, nv)
+                
         except Exception as e:
             QMessageBox.critical(self.view, "Lỗi", str(e))
 
@@ -186,7 +221,14 @@ class SterilizationController(QObject):
             
             items_json = mac.get('loaded_items_json')
             if items_json:
-                items = json.loads(items_json)
+                try:
+                    parsed_j = json.loads(items_json)
+                    if isinstance(parsed_j, dict):
+                        items = parsed_j.get('items', [])
+                    else:
+                        items = parsed_j
+                except:
+                    items = []
                 for it in items:
                     req_id = it.get('req_id')
                     sl = it.get('so_luong', 0)
@@ -239,7 +281,7 @@ class SterilizationController(QObject):
                             # Tạo bản sao giữ lại số dư chờ ở ngoài
                             self.db.execute("""INSERT INTO lich_su_giao_nhan 
                                 (khoa_giao, ma_do, so_luong, trang_thai, thoi_gian, ma_phieu) 
-                                VALUES (%s, %s, %s, %s, %s, %s, %s)""", 
+                                VALUES (%s, %s, %s, %s, %s, %s)""", 
                                 (req['khoa_giao'], req['ma_do'], sl_con_lai, req['trang_thai'], req['thoi_gian'], req['ma_phieu']))
                             # Khóa phiếu hiện tại
                             self.db.execute("UPDATE lich_su_giao_nhan SET so_luong=%s, trang_thai='DANG_TIET_KHUAN' WHERE id=%s", (sl_chon, req_id))

@@ -94,6 +94,10 @@ class DBManager:
         )
         '''
         self.execute(query)
+        try:
+            self.execute("ALTER TABLE machines ADD COLUMN current_cycle_id INT NULL")
+        except:
+            pass
 
     def track_set_status(self, ma_bo, ten_bo, khoa_gui, trang_thai):
         # Insert or Update the tracking record for testing
